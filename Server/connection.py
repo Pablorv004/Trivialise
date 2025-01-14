@@ -31,6 +31,10 @@ class TriviaServer:
                     print(f"Received message: {message}")
                     if message.startswith("ANSWER:"):
                         self.answers[client_socket] = message.split(":")[1]
+                    elif message.startswith("REGISTER:"):
+                        self.handle_register(client_socket, message)
+                    elif message.startswith("LOGIN:"):
+                        self.handle_login(client_socket, message)
                 except ConnectionResetError:
                     break
             client_socket.close()
@@ -47,6 +51,22 @@ class TriviaServer:
                 client_handler.start()
             else:
                 print("Server is full")
+
+    def handle_register(self, client_socket, message):
+        _, username, password = message.split(":")
+        if self.db.get_user(username):
+            client_socket.sendall("REGISTER_FAIL".encode('utf-8'))
+        else:
+            self.db.create_user(username, password)
+            client_socket.sendall("REGISTER_SUCCESS".encode('utf-8'))
+
+    def handle_login(self, client_socket, message):
+        _, username, password = message.split(":")
+        user = self.db.get_user(username)
+        if user and user['password'] == password:
+            client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
+        else:
+            client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
 
     def broadcast_question(self):
         if self.current_question_index < len(self.questions):

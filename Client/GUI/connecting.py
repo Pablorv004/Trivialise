@@ -1,5 +1,6 @@
 import tkinter as tk
 from connection import TriviaClient
+from establishname import open_establish_name_window
 
 class ConnectingWindow:
     def __init__(self, master):
@@ -16,7 +17,7 @@ class ConnectingWindow:
         try:
             self.client.connect_to_server()
             self.master.destroy()  # Close the connecting window
-            # ...code to open the next window...
+            open_establish_name_window(self.client)
         except Exception as e:
             self.display_error(str(e))
 
