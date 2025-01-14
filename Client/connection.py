@@ -5,6 +5,7 @@ class TriviaClient:
         self.server_host = host
         self.server_port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.username = None
 
     def connect_to_server(self):
         try:

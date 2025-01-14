@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from connection import TriviaClient
-from hashlib import sha256
+from lobby import open_lobby_window
 
 class EstablishNameWindow:
     def __init__(self, master, client):
@@ -72,8 +72,9 @@ class EstablishNameWindow:
         response = self.client.receive_message()
         if response == "LOGIN_SUCCESS":
             messagebox.showinfo("Success", "Login successful.")
+            self.client.username = username
             self.master.destroy()
-            # ...code to open the lobby window with the user data...
+            open_lobby_window(self.client)
         elif response == "LOGIN_FAIL":
             messagebox.showerror("Error", "Invalid username or password.")
 

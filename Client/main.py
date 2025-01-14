@@ -5,7 +5,6 @@ from connection import TriviaClient
 def start_client(server_ip):
     client = TriviaClient(host=server_ip)
     open_connecting_window()
-    open_lobby_window(client)
 
 if __name__ == "__main__":
     server_ip = input("Enter the server IP address: ").strip()

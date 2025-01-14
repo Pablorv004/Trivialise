@@ -3,12 +3,14 @@ from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import threading
 import time
+from game import open_game_window
 
 class LobbyWindow:
     def __init__(self, master, client):
         self.master = master
         self.client = client
-        self.master.title("Lobby")
+        self.username = client.username
+        self.master.title(f"Lobby - {self.username}")
         self.settings = {"amount": 10, "difficulty": "Any Difficulty"}
 
         # Load and display logo
@@ -68,8 +70,15 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
     def start_game(self):
-        # ...implement start game functionality...
-        pass
+        self.show_loading_spinner()
+        self.client.send_message("START_GAME")
+        response = self.client.receive_message()
+        if response == "START_GAME_SUCCESS":
+            self.master.destroy()
+            open_game_window(self.client)
+        else:
+            self.hide_loading_spinner()
+            messagebox.showerror("Error", "Failed to start the game.")
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
@@ -90,6 +99,15 @@ class LobbyWindow:
                     spinner = tk.Label(frame, text="Loading...")
                     spinner.pack()
             time.sleep(1)
+
+    def show_loading_spinner(self):
+        self.loading_frame = tk.Frame(self.master, bg='black', opacity=0.5)
+        self.loading_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.spinner_label = tk.Label(self.loading_frame, text="Loading...", fg='white', bg='black', font=("Helvetica", 16))
+        self.spinner_label.pack(expand=True)
+
+    def hide_loading_spinner(self):
+        self.loading_frame.destroy()
 
 def open_lobby_window(client):
     root = tk.Tk()

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import threading
 import time
+from lobby import open_lobby_window
 
 class GameWindow:
     def __init__(self, master, client):
@@ -58,7 +59,7 @@ class GameWindow:
                 winner_message = message.split("END_GAME:")[1]
                 messagebox.showinfo("Game Over", winner_message)
                 self.master.destroy()
-                # ...code to return to the lobby...
+                open_lobby_window(self.client)
 
     def update_leaderboard(self, data):
         for widget in self.leaderboard_frame.winfo_children():

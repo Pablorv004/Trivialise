@@ -14,7 +14,6 @@ class TriviaServer:
         self.answers = {}
         self.scores = {}
         self.db = Database()
-        # ...existing code...
 
     def start_server(self, host='0.0.0.0', port=12345):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,6 +34,8 @@ class TriviaServer:
                         self.handle_register(client_socket, message)
                     elif message.startswith("LOGIN:"):
                         self.handle_login(client_socket, message)
+                    elif message == "START_GAME":
+                        self.handle_start_game(client_socket)
                 except ConnectionResetError:
                     break
             client_socket.close()
@@ -67,6 +68,11 @@ class TriviaServer:
             client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
+
+    def handle_start_game(self, client_socket):
+        self.fetch_and_broadcast_questions(10, "Any Difficulty", "Any Type")
+        for client in self.clients:
+            client.sendall("START_GAME_SUCCESS".encode('utf-8'))
 
     def broadcast_question(self):
         if self.current_question_index < len(self.questions):
