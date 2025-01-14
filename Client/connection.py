@@ -29,3 +29,12 @@ class TriviaClient:
     def close_connection(self):
         self.client_socket.close()
         print("Connection closed.")
+
+    def get_player_list(self):
+        try:
+            self.send_message("GET_PLAYER_LIST")
+            player_list = self.receive_message()
+            return player_list.split(",") if player_list else []
+        except Exception as e:
+            print(f"Error getting player list: {e}")
+            return []
