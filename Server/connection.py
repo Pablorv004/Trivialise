@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+import json
 from hashlib import sha256
 from trivia_service import fetch_questions
 from trivia_provider import transform_questions
@@ -37,8 +38,9 @@ class TriviaServer:
                         self.handle_register(client_socket, message)
                     elif message.startswith("LOGIN:"):
                         self.handle_login(client_socket, message)
-                    elif message == "START_GAME":
-                        self.handle_start_game(client_socket)
+                    elif message.startswith("START_GAME:"):
+                        settings = json.loads(message.split(":", 1)[1])
+                        self.handle_start_game(client_socket, settings)
                 except ConnectionResetError:
                     break
             client_socket.close()
@@ -75,8 +77,11 @@ class TriviaServer:
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
 
-    def handle_start_game(self, client_socket):
-        self.fetch_and_broadcast_questions(10, "Any Difficulty", "Any Type")
+    def handle_start_game(self, client_socket, settings):
+        amount = settings.get("amount", 10)
+        difficulty = settings.get("difficulty", "Any Difficulty")
+        qtype = settings.get("type", "Any Type")
+        self.fetch_and_broadcast_questions(amount, difficulty, qtype)
         for client in self.clients:
             client.sendall("START_GAME_SUCCESS".encode('utf-8'))
 
@@ -152,4 +157,5 @@ class TriviaServer:
 
     def fetch_and_broadcast_questions(self, amount, difficulty, qtype):
         self.questions = transform_questions(fetch_questions(amount, difficulty, qtype))
+        print(f"Broadcasting {len(self.questions)} questions")
         self.broadcast_question()

@@ -3,16 +3,16 @@ from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import threading
 import time
+import json
 
 class LobbyWindow:
-    def __init__(self, master, client, geometry=None):
+    def __init__(self, master, client):
         self.master = master
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        if geometry:
-            self.master.geometry(geometry)
-        self.settings = {"amount": 10, "difficulty": "Any Difficulty"}
+        self.master.geometry("250x600") 
+        self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
         logo = Image.open("resources/logo.png")
@@ -56,6 +56,12 @@ class LobbyWindow:
         difficulty_options = ["Any Difficulty", "Easy", "Normal", "Hard"]
         difficulty_menu = tk.OptionMenu(settings_dialog, difficulty_var, *difficulty_options)
         difficulty_menu.pack(pady=5)
+        
+        tk.Label(settings_dialog, text="Type:").pack(pady=5)
+        type_var = tk.StringVar(value=self.settings["type"])
+        type_options = ["Any Type", "Multiple Choice", "True/False"]
+        type_menu = tk.OptionMenu(settings_dialog, type_var, *type_options)
+        type_menu.pack(pady=5)
 
         def apply_settings():
             amount = amount_var.get()
@@ -65,6 +71,7 @@ class LobbyWindow:
                 messagebox.showerror("Invalid Input", "Amount must be between 5 and 50.")
                 return
             self.settings["difficulty"] = difficulty_var.get()
+            self.settings["type"] = type_var.get()
             settings_dialog.destroy()
 
         tk.Button(settings_dialog, text="Cancel", command=settings_dialog.destroy).pack(side=tk.LEFT, padx=20, pady=20)
@@ -72,14 +79,13 @@ class LobbyWindow:
 
     def start_game(self):
         print("Starting game...")
-        self.dim_screen()
-        self.client.send_message("START_GAME")
-        response = self.client.receive_message()
-        geometry = self.master.winfo_geometry()
+        settings_message = f"START_GAME:{json.dumps(self.settings)}"
+        self.client.send_message(settings_message)
+        self.client.receive_message()
         self.master.destroy()
         from .game import open_game_window
         print("Opening game window...")
-        open_game_window(self.client, geometry)
+        open_game_window(self.client)
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
@@ -107,17 +113,7 @@ class LobbyWindow:
             except tk.TclError:
                 break
 
-    def dim_screen(self):
-        self.dim_window = tk.Toplevel(self.master)
-        self.dim_window.attributes("-alpha", 0.5)
-        self.dim_window.overrideredirect(True)
-        self.dim_window.geometry(self.master.winfo_geometry())
-        self.dim_window.configure(bg='black')
-
-    def undim_screen(self):
-        self.dim_window.destroy()
-
-def open_lobby_window(client, geometry=None):
+def open_lobby_window(client):
     root = tk.Tk()
-    app = LobbyWindow(root, client, geometry)
+    app = LobbyWindow(root, client)
     root.mainloop()

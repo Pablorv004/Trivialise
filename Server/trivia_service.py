@@ -9,6 +9,8 @@ def fetch_questions(amount, difficulty, qtype):
     
     response = requests.get(url)
     if response.status_code == 200:
-        return response.json().get('results', [])
+        questions = response.json().get('results', [])
+        print(f"Fetched {len(questions)} questions")
+        return questions
     else:
         return []

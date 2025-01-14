@@ -12,4 +12,5 @@ def transform_questions(data):
             "incorrect_answers": [html.unescape(ans) for ans in item["incorrect_answers"]]
         }
         questions.append(question)
+    print(f"Transformed {len(questions)} questions")
     return questions

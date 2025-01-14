@@ -4,12 +4,11 @@ from hashlib import sha256
 from GUI.lobby import open_lobby_window
 
 class EstablishNameWindow:
-    def __init__(self, master, client, geometry=None):
+    def __init__(self, master, client):
         self.master = master
         self.client = client
         self.master.title("Establish Name")
-        if geometry:
-            self.master.geometry(geometry)
+        self.master.geometry("300x200")
 
         self.label = tk.Label(master, text="Welcome! Please register or login.")
         self.label.pack(pady=20)
@@ -98,9 +97,8 @@ class EstablishNameWindow:
         response = self.client.receive_message()
         if response == "LOGIN_SUCCESS":
             self.client.username = username
-            geometry = self.master.winfo_geometry()
             self.master.destroy()
-            open_lobby_window(self.client, geometry)
+            open_lobby_window(self.client)
         elif response == "LOGIN_FAIL":
             messagebox.showerror("Error", "Invalid username or password.")
 
@@ -108,7 +106,7 @@ class EstablishNameWindow:
         for widget in self.master.winfo_children():
             widget.destroy()
 
-def open_establish_name_window(client, geometry=None):
+def open_establish_name_window(client):
     root = tk.Tk()
-    app = EstablishNameWindow(root, client, geometry)
+    app = EstablishNameWindow(root, client)
     root.mainloop()

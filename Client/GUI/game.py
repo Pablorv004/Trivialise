@@ -4,17 +4,16 @@ import threading
 import time
 
 class GameWindow:
-    def __init__(self, master, client, geometry=None):
+    def __init__(self, master, client):
         print("Initializing GameWindow...")
         self.master = master
         self.client = client
         self.master.title("Trivia Game")
-        if geometry:
-            self.master.geometry(geometry)
+        self.master.geometry("600x800")
         self.selected_answer = None
 
         # Question area
-        self.question_label = tk.Label(master, text="", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(master, text="Ready?", wraplength=400, justify=tk.LEFT)
         self.question_label.pack(pady=20)
 
         # Timer
@@ -67,11 +66,10 @@ class GameWindow:
             elif message.startswith("END_GAME:"):
                 winner_message = message.split("END_GAME:")[1]
                 messagebox.showinfo("Game Over", winner_message)
-                geometry = self.master.winfo_geometry()
                 self.master.destroy()
                 from .lobby import open_lobby_window
                 print("Returning to lobby...")
-                open_lobby_window(self.client, geometry)
+                open_lobby_window(self.client)
             elif message.startswith("CORRECT_ANSWER:"):
                 correct_answer = message.split("CORRECT_ANSWER:")[1]
                 self.highlight_correct_answer(correct_answer)
@@ -113,8 +111,8 @@ class GameWindow:
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
 
-def open_game_window(client, geometry=None):
+def open_game_window(client):
     print("Creating game window...")
     root = tk.Tk()
-    app = GameWindow(root, client, geometry)
+    app = GameWindow(root, client)
     root.mainloop()
