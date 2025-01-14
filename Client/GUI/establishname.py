@@ -97,7 +97,6 @@ class EstablishNameWindow:
         self.client.send_message(f"LOGIN:{username}:{hashed_password}")
         response = self.client.receive_message()
         if response == "LOGIN_SUCCESS":
-            messagebox.showinfo("Success", "Login successful.")
             self.client.username = username
             geometry = self.master.winfo_geometry()
             self.master.destroy()

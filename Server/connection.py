@@ -32,6 +32,7 @@ class TriviaServer:
                     print(f"Received message from {client_ip}: {message}")
                     if message.startswith("ANSWER:"):
                         self.answers[client_socket] = message.split(":")[1]
+                        self.process_answers()
                     elif message.startswith("REGISTER:"):
                         self.handle_register(client_socket, message)
                     elif message.startswith("LOGIN:"):
@@ -68,9 +69,8 @@ class TriviaServer:
 
     def handle_login(self, client_socket, message):
         _, username, password = message.split(":")
-        hashed_password = sha256(password.encode()).hexdigest()
         user = self.db.get_user(username)
-        if user and user['password'] == hashed_password:
+        if user and user['password'] == password:
             client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
@@ -81,12 +81,19 @@ class TriviaServer:
             client.sendall("START_GAME_SUCCESS".encode('utf-8'))
 
     def broadcast_question(self):
+        if not self.clients:
+            print("No clients connected. Terminating game.")
+            self.end_game()
+            return
+
         if self.current_question_index < len(self.questions):
             question = self.questions[self.current_question_index]
+            print(f"Broadcasting question: {question['question']}")
             for client in self.clients:
                 client.sendall(f"QUESTION:{question['question']}".encode('utf-8'))
+            for client in self.clients:
                 for i, answer in enumerate(question['incorrect_answers'] + [question['correct_answer']]):
-                    client.sendall(f"ANSWER_{chr(65+i)}:{answer}".encode('utf-8'))
+                    client.sendall(f"ANSWER_{i+1}:{answer}".encode('utf-8'))
             self.current_question_index += 1
             self.start_timer(question['difficulty'])
 
@@ -114,6 +121,7 @@ class TriviaServer:
 
     def broadcast_leaderboard(self):
         leaderboard = ",".join([f"{client.getpeername()[0]}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True)])
+        print(f"Broadcasting leaderboard: {leaderboard}")
         for client in self.clients:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))
 

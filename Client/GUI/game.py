@@ -5,6 +5,7 @@ import time
 
 class GameWindow:
     def __init__(self, master, client, geometry=None):
+        print("Initializing GameWindow...")
         self.master = master
         self.client = client
         self.master.title("Trivia Game")
@@ -22,10 +23,8 @@ class GameWindow:
 
         # Answer buttons
         self.answer_buttons = {}
-        for i in range(4):
-            btn = tk.Button(master, text=f"Answer {chr(65+i)}", command=lambda i=i: self.select_answer(chr(65+i)))
-            btn.pack(fill=tk.X, padx=20, pady=5)
-            self.answer_buttons[chr(65+i)] = btn
+        self.answer_frame = tk.Frame(master)
+        self.answer_frame.pack(pady=20)
 
         # Leaderboard
         self.leaderboard_frame = tk.Frame(master)
@@ -45,12 +44,21 @@ class GameWindow:
     def receive_questions(self):
         while True:
             message = self.client.receive_message()
+            print(f"Received message: {message}")
             if message.startswith("QUESTION:"):
                 self.question_label.config(text=message.split("QUESTION:")[1])
-            elif message.startswith("ANSWER_"):
-                answer_key = message.split(":")[0].split("_")[1]
-                answer_text = message.split(":")[1]
-                self.answer_buttons[answer_key].config(text=answer_text)
+                self.reset_answers()
+            elif "ANSWER_" in message:
+                parts = message.split("ANSWER_")
+                for part in parts[1:]:
+                    if "TIMER:" in part:
+                        answer_key, answer_text = part.split("TIMER:")[0].split(":", 1)
+                        self.update_answer_button(int(answer_key), answer_text)
+                        timer_value = part.split("TIMER:")[1]
+                        self.timer_label.config(text=timer_value)
+                    else:
+                        answer_key, answer_text = part.split(":", 1)
+                        self.update_answer_button(int(answer_key), answer_text)
             elif message.startswith("TIMER:"):
                 self.timer_label.config(text=message.split("TIMER:")[1])
             elif message.startswith("LEADERBOARD:"):
@@ -62,9 +70,41 @@ class GameWindow:
                 geometry = self.master.winfo_geometry()
                 self.master.destroy()
                 from .lobby import open_lobby_window
+                print("Returning to lobby...")
                 open_lobby_window(self.client, geometry)
+            elif message.startswith("CORRECT_ANSWER:"):
+                correct_answer = message.split("CORRECT_ANSWER:")[1]
+                self.highlight_correct_answer(correct_answer)
+            elif message.startswith("INCORRECT_ANSWER_"):
+                parts = message.split("INCORRECT_ANSWER_")
+                for part in parts[1:]:
+                    answer_key, answer_text = part.split(":", 1)
+                    self.highlight_incorrect_answer(int(answer_key), answer_text)
+
+    def highlight_correct_answer(self, correct_answer):
+        for key, btn in self.answer_buttons.items():
+            if btn.cget("text") == correct_answer:
+                btn.config(bg="green")
+
+    def highlight_incorrect_answer(self, key, incorrect_answer):
+        if self.selected_answer == key:
+            self.answer_buttons[key].config(bg="red")
+
+    def update_answer_button(self, key, text):
+        if key not in self.answer_buttons:
+            btn = tk.Button(self.answer_frame, text=f"Answer {key}", command=lambda k=key: self.select_answer(k))
+            btn.pack(fill=tk.X, padx=20, pady=5)
+            self.answer_buttons[key] = btn
+        self.answer_buttons[key].config(text=text, bg="SystemButtonFace")
+
+    def reset_answers(self):
+        self.selected_answer = None
+        for btn in self.answer_buttons.values():
+            btn.destroy()
+        self.answer_buttons.clear()
 
     def update_leaderboard(self, data):
+        print("Updating leaderboard...")
         for widget in self.leaderboard_frame.winfo_children():
             widget.destroy()
         for entry in data:
@@ -74,6 +114,7 @@ class GameWindow:
             self.leaderboard_labels.append(label)
 
 def open_game_window(client, geometry=None):
+    print("Creating game window...")
     root = tk.Tk()
     app = GameWindow(root, client, geometry)
     root.mainloop()

@@ -9,7 +9,7 @@ def start_server():
 
 if __name__ == "__main__":
     server = start_server()
-    
+    print()
     while True:
         user_input = input("Type 'exit' to stop the server: ").strip().lower()
         if user_input == 'exit':

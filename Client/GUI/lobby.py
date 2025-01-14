@@ -3,7 +3,6 @@ from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import threading
 import time
-from GUI.game import open_game_window
 
 class LobbyWindow:
     def __init__(self, master, client, geometry=None):
@@ -17,7 +16,7 @@ class LobbyWindow:
 
         # Load and display logo
         logo = Image.open("resources/logo.png")
-        logo = logo.resize((200, 100), Image.ANTIALIAS)
+        logo = logo.resize((200, 100), Image.LANCZOS)
         self.logo_img = ImageTk.PhotoImage(logo)
         self.logo_label = tk.Label(master, image=self.logo_img)
         self.logo_label.pack(pady=20)
@@ -72,46 +71,51 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
     def start_game(self):
-        self.show_loading_spinner()
+        print("Starting game...")
+        self.dim_screen()
         self.client.send_message("START_GAME")
         response = self.client.receive_message()
-        if response == "START_GAME_SUCCESS":
-            geometry = self.master.winfo_geometry()
-            self.master.destroy()
-            from .game import open_game_window
-            open_game_window(self.client, geometry)
-        else:
-            self.hide_loading_spinner()
-            messagebox.showerror("Error", "Failed to start the game.")
+        geometry = self.master.winfo_geometry()
+        self.master.destroy()
+        from .game import open_game_window
+        print("Opening game window...")
+        open_game_window(self.client, geometry)
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
             self.client.close_connection()
+            self.master.quit()
             self.master.destroy()
 
     def update_player_list(self):
         while True:
-            # Simulate getting player list from server
-            player_list = self.client.get_player_list()
-            for i, frame in enumerate(self.player_frames):
-                for widget in frame.winfo_children():
-                    widget.destroy()
-                if i < len(player_list):
-                    player_label = tk.Label(frame, text=player_list[i])
-                    player_label.pack()
-                else:
-                    spinner = tk.Label(frame, text="Loading...")
-                    spinner.pack()
-            time.sleep(1)
+            if not self.master.winfo_exists():
+                break
+            try:
+                # Simulate getting player list from server
+                player_list = self.client.get_player_list()
+                for i, frame in enumerate(self.player_frames):
+                    for widget in frame.winfo_children():
+                        widget.destroy()
+                    if i < len(player_list):
+                        player_label = tk.Label(frame, text=player_list[i])
+                        player_label.pack()
+                    else:
+                        player_label = tk.Label(frame, text="Loading...")
+                        player_label.pack()
+                time.sleep(1)
+            except tk.TclError:
+                break
 
-    def show_loading_spinner(self):
-        self.loading_frame = tk.Frame(self.master, bg='black', opacity=0.5)
-        self.loading_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
-        self.spinner_label = tk.Label(self.loading_frame, text="Loading...", fg='white', bg='black', font=("Helvetica", 16))
-        self.spinner_label.pack(expand=True)
+    def dim_screen(self):
+        self.dim_window = tk.Toplevel(self.master)
+        self.dim_window.attributes("-alpha", 0.5)
+        self.dim_window.overrideredirect(True)
+        self.dim_window.geometry(self.master.winfo_geometry())
+        self.dim_window.configure(bg='black')
 
-    def hide_loading_spinner(self):
-        self.loading_frame.destroy()
+    def undim_screen(self):
+        self.dim_window.destroy()
 
 def open_lobby_window(client, geometry=None):
     root = tk.Tk()
