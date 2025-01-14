@@ -2,6 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
 import os
+from hashlib import sha256
 
 load_dotenv()
 
@@ -22,9 +23,10 @@ class Database:
             print(f"Error: {e}")
 
     def create_user(self, username, password):
+        hashed_password = sha256(password.encode()).hexdigest()
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
-                    (username, password, 0, 0, 0))
+                       (username, hashed_password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
 
@@ -38,6 +40,6 @@ class Database:
     def update_user(self, username, totalPoints, roundsPlayed, gamesPlayed):
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
-                    (totalPoints, roundsPlayed, gamesPlayed, username))
+                       (totalPoints, roundsPlayed, gamesPlayed, username))
         self.connection.commit()
         cursor.close()
