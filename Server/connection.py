@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+from hashlib import sha256
 from trivia_service import fetch_questions
 from trivia_provider import transform_questions
 from database import Database
@@ -22,12 +23,13 @@ class TriviaServer:
         print(f"Server started on {host}:{port}")
 
         def handle_client(client_socket):
+            client_ip = client_socket.getpeername()[0]
             while True:
                 try:
                     message = client_socket.recv(1024).decode('utf-8')
                     if not message:
                         break
-                    print(f"Received message: {message}")
+                    print(f"Received message from {client_ip}: {message}")
                     if message.startswith("ANSWER:"):
                         self.answers[client_socket] = message.split(":")[1]
                     elif message.startswith("REGISTER:"):
@@ -40,16 +42,19 @@ class TriviaServer:
                     break
             client_socket.close()
             self.clients.remove(client_socket)
-            print("Client disconnected")
-
+            print(f"Client {client_ip} disconnected")
+            
         while True:
             if len(self.clients) < self.max_clients:
-                client_socket, addr = server_socket.accept()
-                self.clients.append(client_socket)
-                self.scores[client_socket] = 0
-                print(f"Connection from {addr}")
-                client_handler = threading.Thread(target=handle_client, args=(client_socket,))
-                client_handler.start()
+                try:
+                    client_socket, addr = server_socket.accept()
+                    self.clients.append(client_socket)
+                    self.scores[client_socket] = 0
+                    print(f"Connection from {addr}")
+                    client_handler = threading.Thread(target=handle_client, args=(client_socket,))
+                    client_handler.start()
+                except OSError:
+                    break
             else:
                 print("Server is full")
 
@@ -63,8 +68,9 @@ class TriviaServer:
 
     def handle_login(self, client_socket, message):
         _, username, password = message.split(":")
+        hashed_password = sha256(password.encode()).hexdigest()
         user = self.db.get_user(username)
-        if user and user['password'] == password:
+        if user and user['password'] == hashed_password:
             client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))

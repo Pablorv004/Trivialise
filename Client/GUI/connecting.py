@@ -1,6 +1,6 @@
 import tkinter as tk
 from connection import TriviaClient
-from establishname import open_establish_name_window
+from GUI.establishname import open_establish_name_window
 
 class ConnectingWindow:
     def __init__(self, master):

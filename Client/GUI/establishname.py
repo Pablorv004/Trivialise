@@ -1,13 +1,15 @@
 import tkinter as tk
 from tkinter import messagebox
-from connection import TriviaClient
-from lobby import open_lobby_window
+from hashlib import sha256
+from GUI.lobby import open_lobby_window
 
 class EstablishNameWindow:
-    def __init__(self, master, client):
+    def __init__(self, master, client, geometry=None):
         self.master = master
         self.client = client
         self.master.title("Establish Name")
+        if geometry:
+            self.master.geometry(geometry)
 
         self.label = tk.Label(master, text="Welcome! Please register or login.")
         self.label.pack(pady=20)
@@ -18,31 +20,53 @@ class EstablishNameWindow:
         self.login_button = tk.Button(master, text="Login", command=self.open_login)
         self.login_button.pack(pady=10)
 
+    def add_placeholder(self, entry, placeholder):
+        entry.insert(0, placeholder)
+        entry.bind("<FocusIn>", lambda event: self.clear_placeholder(event, placeholder))
+        entry.bind("<FocusOut>", lambda event: self.set_placeholder(event, placeholder))
+
+    def clear_placeholder(self, event, placeholder):
+        if event.widget.get() == placeholder:
+            event.widget.delete(0, tk.END)
+            event.widget.config(fg='black')
+
+    def set_placeholder(self, event, placeholder):
+        if not event.widget.get():
+            event.widget.insert(0, placeholder)
+            event.widget.config(fg='grey')
+
     def open_register(self):
         self.clear_window()
-        self.label.config(text="Register")
+        self.label = tk.Label(self.master, text="Register")
+        self.label.pack(pady=20)
 
-        self.username_entry = tk.Entry(self.master, placeholder="Username")
+        self.username_entry = tk.Entry(self.master, fg='grey')
         self.username_entry.pack(pady=5)
+        self.add_placeholder(self.username_entry, "Username")
 
-        self.password_entry = tk.Entry(self.master, show="*", placeholder="Password")
+        self.password_entry = tk.Entry(self.master, show="*", fg='grey')
         self.password_entry.pack(pady=5)
+        self.add_placeholder(self.password_entry, "Password")
 
-        self.confirm_password_entry = tk.Entry(self.master, show="*", placeholder="Confirm Password")
+        self.confirm_password_entry = tk.Entry(self.master, show="*", fg='grey')
         self.confirm_password_entry.pack(pady=5)
+        self.add_placeholder(self.confirm_password_entry, "Confirm Password")
 
         self.register_submit_button = tk.Button(self.master, text="Submit", command=self.register_user)
         self.register_submit_button.pack(pady=10)
 
     def open_login(self):
         self.clear_window()
-        self.label.config(text="Login")
+        self.label = tk.Label(self.master, text="Login")
+        self.label.pack(pady=20)
 
-        self.username_entry = tk.Entry(self.master, placeholder="Username")
+        self.username_entry = tk.Entry(self.master, fg='grey')
         self.username_entry.pack(pady=5)
+        self.add_placeholder(self.username_entry, "Username")
 
-        self.password_entry = tk.Entry(self.master, show="*", placeholder="Password")
+        self.password_entry = tk.Entry(self.master, show="*", fg='grey')
         self.password_entry.pack(pady=5)
+        self.add_placeholder(self.password_entry, "Password")
 
         self.login_submit_button = tk.Button(self.master, text="Submit", command=self.login_user)
         self.login_submit_button.pack(pady=10)
@@ -56,7 +80,8 @@ class EstablishNameWindow:
             messagebox.showerror("Error", "Passwords do not match.")
             return
 
-        self.client.send_message(f"REGISTER:{username}:{password}")
+        hashed_password = sha256(password.encode()).hexdigest()
+        self.client.send_message(f"REGISTER:{username}:{hashed_password}")
         response = self.client.receive_message()
         if response == "REGISTER_SUCCESS":
             messagebox.showinfo("Success", "Registration successful. Please login.")
@@ -68,13 +93,15 @@ class EstablishNameWindow:
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        self.client.send_message(f"LOGIN:{username}:{password}")
+        hashed_password = sha256(password.encode()).hexdigest()
+        self.client.send_message(f"LOGIN:{username}:{hashed_password}")
         response = self.client.receive_message()
         if response == "LOGIN_SUCCESS":
             messagebox.showinfo("Success", "Login successful.")
             self.client.username = username
+            geometry = self.master.winfo_geometry()
             self.master.destroy()
-            open_lobby_window(self.client)
+            open_lobby_window(self.client, geometry)
         elif response == "LOGIN_FAIL":
             messagebox.showerror("Error", "Invalid username or password.")
 
@@ -82,7 +109,7 @@ class EstablishNameWindow:
         for widget in self.master.winfo_children():
             widget.destroy()
 
-def open_establish_name_window(client):
+def open_establish_name_window(client, geometry=None):
     root = tk.Tk()
-    app = EstablishNameWindow(root, client)
+    app = EstablishNameWindow(root, client, geometry)
     root.mainloop()

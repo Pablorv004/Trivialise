@@ -19,17 +19,20 @@ class TriviaClient:
             self.client_socket.sendall(message.encode('utf-8'))
         except BrokenPipeError:
             print("Failed to send message. Connection might be closed.")
+            self.close_connection()
 
     def receive_message(self):
         try:
             return self.client_socket.recv(1024).decode('utf-8')
         except ConnectionResetError:
             print("Connection closed by the server.")
+            self.close_connection()
             return None
 
     def close_connection(self):
         self.client_socket.close()
         print("Connection closed.")
+        exit()
 
     def get_player_list(self):
         try:

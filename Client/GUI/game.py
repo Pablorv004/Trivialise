@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import messagebox
 import threading
 import time
-from lobby import open_lobby_window
 
 class GameWindow:
-    def __init__(self, master, client):
+    def __init__(self, master, client, geometry=None):
         self.master = master
         self.client = client
         self.master.title("Trivia Game")
+        if geometry:
+            self.master.geometry(geometry)
         self.selected_answer = None
 
         # Question area
@@ -58,8 +59,10 @@ class GameWindow:
             elif message.startswith("END_GAME:"):
                 winner_message = message.split("END_GAME:")[1]
                 messagebox.showinfo("Game Over", winner_message)
+                geometry = self.master.winfo_geometry()
                 self.master.destroy()
-                open_lobby_window(self.client)
+                from .lobby import open_lobby_window
+                open_lobby_window(self.client, geometry)
 
     def update_leaderboard(self, data):
         for widget in self.leaderboard_frame.winfo_children():
@@ -70,7 +73,7 @@ class GameWindow:
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
 
-def open_game_window(client):
+def open_game_window(client, geometry=None):
     root = tk.Tk()
-    app = GameWindow(root, client)
+    app = GameWindow(root, client, geometry)
     root.mainloop()

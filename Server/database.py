@@ -9,6 +9,9 @@ load_dotenv()
 class Database:
     def __init__(self):
         self.connection = None
+        self.connect()
+
+    def connect(self):
         try:
             self.connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST'),
@@ -22,7 +25,13 @@ class Database:
         except Error as e:
             print(f"Error: {e}")
 
+    def reconnect(self):
+        if not self.connection.is_connected():
+            print("Reconnecting to MySQL database...")
+            self.connect()
+
     def create_user(self, username, password):
+        self.reconnect()
         hashed_password = sha256(password.encode()).hexdigest()
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
@@ -31,6 +40,7 @@ class Database:
         cursor.close()
 
     def get_user(self, username):
+        self.reconnect()
         cursor = self.connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
@@ -38,6 +48,7 @@ class Database:
         return user
 
     def update_user(self, username, totalPoints, roundsPlayed, gamesPlayed):
+        self.reconnect()
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
                        (totalPoints, roundsPlayed, gamesPlayed, username))

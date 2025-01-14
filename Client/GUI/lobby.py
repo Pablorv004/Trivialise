@@ -3,14 +3,16 @@ from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import threading
 import time
-from game import open_game_window
+from GUI.game import open_game_window
 
 class LobbyWindow:
-    def __init__(self, master, client):
+    def __init__(self, master, client, geometry=None):
         self.master = master
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
+        if geometry:
+            self.master.geometry(geometry)
         self.settings = {"amount": 10, "difficulty": "Any Difficulty"}
 
         # Load and display logo
@@ -74,8 +76,10 @@ class LobbyWindow:
         self.client.send_message("START_GAME")
         response = self.client.receive_message()
         if response == "START_GAME_SUCCESS":
+            geometry = self.master.winfo_geometry()
             self.master.destroy()
-            open_game_window(self.client)
+            from .game import open_game_window
+            open_game_window(self.client, geometry)
         else:
             self.hide_loading_spinner()
             messagebox.showerror("Error", "Failed to start the game.")
@@ -109,7 +113,7 @@ class LobbyWindow:
     def hide_loading_spinner(self):
         self.loading_frame.destroy()
 
-def open_lobby_window(client):
+def open_lobby_window(client, geometry=None):
     root = tk.Tk()
-    app = LobbyWindow(root, client)
+    app = LobbyWindow(root, client, geometry)
     root.mainloop()

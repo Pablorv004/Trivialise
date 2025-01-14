@@ -1,5 +1,4 @@
 from GUI.connecting import open_connecting_window
-from GUI.lobby import open_lobby_window
 from connection import TriviaClient
 
 def start_client(server_ip):
