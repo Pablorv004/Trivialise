@@ -114,6 +114,8 @@ class GameWindow:
                 btn.config(bg="green")
             if btn.cget("text") == incorrect_answer:
                 btn.config(bg="red")
+            if correct_answer == incorrect_answer:
+                btn.config(bg="green")
 
     def update_answer_button(self, key, text):
         if key not in self.answer_buttons:
