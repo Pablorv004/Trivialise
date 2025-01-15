@@ -146,7 +146,6 @@ class LobbyWindow:
             if not self.master.winfo_exists():
                 break
             try:
-                # Simulate getting player list from server
                 player_list = self.client.get_player_list()
                 for i, frame in enumerate(self.player_frames):
                     for widget in frame.winfo_children():
@@ -155,7 +154,7 @@ class LobbyWindow:
                         player_label = tk.Label(frame, text=player_list[i])
                         player_label.pack()
                     else:
-                        player_label = tk.Label(frame, text="Loading...")
+                        player_label = tk.Label(frame, text="Waiting for player...")
                         player_label.pack()
                 time.sleep(1)
             except tk.TclError:

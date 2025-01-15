@@ -37,7 +37,7 @@ class TriviaClient:
 
     def get_player_list(self):
         try:
-            self.send_message("GET_PLAYER_LIST")
+            self.send_message("GET_USERNAMES")
             player_list = self.receive_message()
             return player_list.split(",") if player_list else []
         except Exception as e:
@@ -49,4 +49,4 @@ class TriviaClient:
         self.send_message(f"GET_LEADERBOARD:{order_by}")
         response = self.receive_message()
         print(f"Received leaderboard response: {response}")
-        return json.loads(response)
+        return response

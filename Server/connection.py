@@ -66,6 +66,8 @@ class TriviaServer:
         elif message.startswith("GET_LEADERBOARD:"):
             order_by = message.split(":")[1]
             self.handle_get_leaderboard(client_socket, order_by)
+        elif message.startswith("GET_USERNAMES"):
+            self.handle_get_usernames(client_socket)
 
     def handle_register(self, client_socket, message):
         _, username, password = message.split(":")
@@ -79,6 +81,7 @@ class TriviaServer:
         _, username, password = message.split(":")
         user = self.db.get_user(username)
         if user and user['password'] == password:
+            self.db.update_user_ip(username, client_socket.getpeername()[0], time.strftime('%Y-%m-%d %H:%M:%S'))
             client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
@@ -145,7 +148,7 @@ class TriviaServer:
 
     def broadcast_leaderboard(self):
         valid_clients = [client for client in self.clients if client.fileno() != -1]
-        leaderboard = ",".join([f"{client.getpeername()[0]}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True) if client in valid_clients])
+        leaderboard = ",".join([f"{self.db.get_user_by_ip(client.getpeername()[0])['username']}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True) if client in valid_clients])
         print(f"Broadcasting leaderboard: {leaderboard}")
         for client in valid_clients:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))
@@ -171,18 +174,17 @@ class TriviaServer:
 
     def save_game_data(self):
         for client in self.clients:
-            username = client.getpeername()[0]
             score = self.scores[client]
-            print(f"Saving game data for {username} with score {score}")
-            user_data = self.db.get_user(username)
+            user_data = self.db.get_user_by_ip(client.getpeername()[0])
+            print(f"Saving game data for {user_data['username']} with score {score}")
             if user_data:
                 total_points = user_data['totalPoints'] + score
                 rounds_played = user_data['roundsPlayed'] + len(self.questions)
                 games_played = user_data['gamesPlayed'] + 1
-                print(f"Updating user {username}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
-                self.db.update_user(username, total_points, rounds_played, games_played)
+                print(f"Updating user {user_data.username}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
+                self.db.update_user(user_data['username'], total_points, rounds_played, games_played)
             else:
-                print(f"No user data found for {username}")
+                print(f"No user data found for {user_data['username']}")
 
     def fetch_and_broadcast_questions(self, amount, difficulty, qtype):
         self.questions = transform_questions(fetch_questions(amount, difficulty, qtype))
@@ -193,4 +195,9 @@ class TriviaServer:
         print(f"Fetching leaderboard for {order_by}...")
         leaderboard_data = self.db.get_leaderboard(order_by)
         print(f"Sending leaderboard data: {leaderboard_data}")
-        client_socket.sendall(json.dumps(leaderboard_data).encode('utf-8'))
+        client_socket.sendall(f"{leaderboard_data}".encode('utf-8'))
+
+    def handle_get_usernames(self, client_socket):
+        usernames = [self.db.get_user_by_ip(client.getpeername()[0])['username'] for client in self.clients if client.fileno() != -1]
+        usernames_str = ",".join(usernames)
+        client_socket.sendall(f"{usernames_str}".encode('utf-8'))

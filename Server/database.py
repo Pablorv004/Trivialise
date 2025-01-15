@@ -32,10 +32,9 @@ class Database:
 
     def create_user(self, username, password):
         self.reconnect()
-        hashed_password = sha256(password.encode()).hexdigest()
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
-                       (username, hashed_password, 0, 0, 0))
+                       (username, password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
 
@@ -46,6 +45,22 @@ class Database:
         user = cursor.fetchone()
         cursor.close()
         return user
+    
+    def get_user_by_ip(self, ip):
+        self.reconnect()
+        cursor = self.connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE ip = %s ORDER BY lastOnline DESC LIMIT 1", (ip,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
+    
+    def update_user_ip(self, username, ip, lastOnline):
+        self.reconnect()
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE users SET ip = %s WHERE username = %s", (ip, username))
+        cursor.execute("UPDATE users SET lastOnline = %s WHERE username = %s", (lastOnline, username))
+        self.connection.commit()
+        cursor.close()
 
     def update_user(self, username, totalPoints, roundsPlayed, gamesPlayed):
         self.reconnect()
