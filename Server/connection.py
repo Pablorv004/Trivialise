@@ -195,7 +195,8 @@ class TriviaServer:
         print(f"Fetching leaderboard for {order_by}...")
         leaderboard_data = self.db.get_leaderboard(order_by)
         print(f"Sending leaderboard data: {leaderboard_data}")
-        client_socket.sendall(f"{leaderboard_data}".encode('utf-8'))
+        message = ','.join([f'{entry[0]}:{entry[1]}' for entry in leaderboard_data])
+        client_socket.sendall(f"{message}".encode('utf-8'))
 
     def handle_get_usernames(self, client_socket):
         usernames = [self.db.get_user_by_ip(client.getpeername()[0])['username'] for client in self.clients if client.fileno() != -1]

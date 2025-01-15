@@ -11,11 +11,11 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("350x570") 
+        self.master.geometry("375x670") 
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
-        self.logo_img = self.load_image("resources/logo.png", (200, 100))
+        self.logo_img = self.load_image("resources/logo.png", (200, 200))
         self.logo_label = tk.Label(master, image=self.logo_img)
         self.logo_label.pack(pady=20)
 
@@ -105,24 +105,33 @@ class LobbyWindow:
         leaderboard_window.title("Leaderboards")
         leaderboard_window.geometry("400x600")
 
+        order_by_var = tk.StringVar(value="totalPoints")
+
         def show_leaderboard(data):
             print("Showing leaderboard data...")
             for widget in leaderboard_frame.winfo_children():
                 widget.destroy()
-            for i, entry in enumerate(data):
-                username, value = entry
-                label = tk.Label(leaderboard_frame, text=f"{i+1}. {username}: {value}")
-                label.pack(pady=5)
+            entries = data.split(',')
+            for i, entry in enumerate(entries):
+                if ':' in entry:
+                    username, value = entry.split(':')
+                    label = tk.Label(leaderboard_frame, text=f"{i+1}. {username}: {value}")
+                    label.pack(pady=5)
+                else:
+                    print(f"Invalid leaderboard entry: {entry}")
 
         def fetch_leaderboard(order_by):
             try:
                 print(f"Fetching leaderboard for {order_by}...")
+                order_by_var.set(order_by)
                 leaderboard_data = self.client.get_leaderboard(order_by)
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
             except Exception as e:
                 print(f"Error fetching leaderboard: {e}")
                 messagebox.showerror("Error", "Failed to fetch leaderboard data.")
+
+        tk.Label(leaderboard_window, textvariable=order_by_var, font=("Helvetica", 16)).pack(pady=10)
 
         leaderboard_frame = tk.Frame(leaderboard_window)
         leaderboard_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
