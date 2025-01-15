@@ -34,11 +34,13 @@ class GameWindow:
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
 
-    def select_answer(self, answer):
+        self.master.bind("<Button-1>", self.on_button_press)
+
+    def select_answer(self, answer_key):
         if self.selected_answer is None:
-            self.selected_answer = answer
-            self.answer_buttons[answer].config(bg="green")
-            self.client.send_message(f"ANSWER:{answer}")
+            self.selected_answer = answer_key
+            self.answer_buttons[answer_key].config(bg="yellow")
+            self.client.send_message(f"ANSWER:{self.answer_buttons[answer_key].cget('text')}")
 
     def receive_questions(self):
         while True:
@@ -47,6 +49,11 @@ class GameWindow:
             if message.startswith("QUESTION:"):
                 self.question_label.config(text=message.split("QUESTION:")[1])
                 self.reset_answers()
+            elif message.startswith("ANSWER_RESULT:"):
+                parts = message.split("ANSWER_RESULT:")[1].split(",")
+                correct_answer = parts[0].split(":")[1]
+                incorrect_answer = parts[1].split(":")[1]
+                self.highlight_answers(correct_answer, incorrect_answer)
             elif "ANSWER_" in message:
                 parts = message.split("ANSWER_")
                 for part in parts[1:]:
@@ -66,27 +73,18 @@ class GameWindow:
             elif message.startswith("END_GAME:"):
                 winner_message = message.split("END_GAME:")[1]
                 messagebox.showinfo("Game Over", winner_message)
-                self.master.destroy()
+                time.sleep(5)
                 from .lobby import open_lobby_window
                 print("Returning to lobby...")
                 open_lobby_window(self.client)
-            elif message.startswith("CORRECT_ANSWER:"):
-                correct_answer = message.split("CORRECT_ANSWER:")[1]
-                self.highlight_correct_answer(correct_answer)
-            elif message.startswith("INCORRECT_ANSWER_"):
-                parts = message.split("INCORRECT_ANSWER_")
-                for part in parts[1:]:
-                    answer_key, answer_text = part.split(":", 1)
-                    self.highlight_incorrect_answer(int(answer_key), answer_text)
+                self.master.destroy()
 
-    def highlight_correct_answer(self, correct_answer):
+    def highlight_answers(self, correct_answer, incorrect_answer):
         for key, btn in self.answer_buttons.items():
             if btn.cget("text") == correct_answer:
                 btn.config(bg="green")
-
-    def highlight_incorrect_answer(self, key, incorrect_answer):
-        if self.selected_answer == key:
-            self.answer_buttons[key].config(bg="red")
+            if btn.cget("text") == incorrect_answer:
+                btn.config(bg="red")
 
     def update_answer_button(self, key, text):
         if key not in self.answer_buttons:
@@ -110,6 +108,13 @@ class GameWindow:
             label = tk.Label(self.leaderboard_frame, text=f"{username}\nScore: {score}")
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
+
+    def on_button_press(self, event):
+        widget = event.widget
+        for key, btn in self.answer_buttons.items():
+            if widget == btn:
+                self.select_answer(key)
+                break
 
 def open_game_window(client):
     print("Creating game window...")

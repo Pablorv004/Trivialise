@@ -17,7 +17,7 @@ class TriviaServer:
         self.scores = {}
         self.db = Database()
 
-    def start_server(self, host='0.0.0.0', port=12345):
+    def start_server(self, host='127.0.0.1', port=12345):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(self.max_clients)
@@ -31,16 +31,7 @@ class TriviaServer:
                     if not message:
                         break
                     print(f"Received message from {client_ip}: {message}")
-                    if message.startswith("ANSWER:"):
-                        self.answers[client_socket] = message.split(":")[1]
-                        self.process_answers()
-                    elif message.startswith("REGISTER:"):
-                        self.handle_register(client_socket, message)
-                    elif message.startswith("LOGIN:"):
-                        self.handle_login(client_socket, message)
-                    elif message.startswith("START_GAME:"):
-                        settings = json.loads(message.split(":", 1)[1])
-                        self.handle_start_game(client_socket, settings)
+                    self.handle_message(client_socket, message)
                 except ConnectionResetError:
                     break
             client_socket.close()
@@ -60,6 +51,18 @@ class TriviaServer:
                     break
             else:
                 print("Server is full")
+
+    def handle_message(self, client_socket, message):
+        if message.startswith("ANSWER:"):
+            self.answers[client_socket] = message.split(":")[1]
+            self.process_answers()
+        elif message.startswith("REGISTER:"):
+            self.handle_register(client_socket, message)
+        elif message.startswith("LOGIN:"):
+            self.handle_login(client_socket, message)
+        elif message.startswith("START_GAME:"):
+            settings = json.loads(message.split(":", 1)[1])
+            self.handle_start_game(client_socket, settings)
 
     def handle_register(self, client_socket, message):
         _, username, password = message.split(":")
@@ -104,6 +107,10 @@ class TriviaServer:
 
     def start_timer(self, difficulty):
         timer = 30 if difficulty == "hard" else 25 if difficulty == "medium" else 20
+        if not self.clients:
+            print("No clients connected. Terminating game.")
+            self.end_game()
+            return
         for t in range(timer, 0, -1):
             for client in self.clients:
                 client.sendall(f"TIMER:{t}".encode('utf-8'))
@@ -113,9 +120,19 @@ class TriviaServer:
     def process_answers(self):
         question = self.questions[self.current_question_index - 1]
         correct_answer = question['correct_answer']
+        print(f"Processing answers for question: {question['question']}")
+        print(f"Correct answer: {correct_answer}")
+        print(f"Received answers: {self.answers}")
+
+        if not self.answers:
+            print("No answers received.")
+            return
+
         for client, answer in self.answers.items():
+            print(f"Client {client.getpeername()[0]} answered: {answer}")
             if answer == correct_answer:
                 self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
+            client.sendall(f"ANSWER_RESULT:correct:{correct_answer},incorrect:{answer}".encode('utf-8'))
         self.answers.clear()
         self.broadcast_leaderboard()
         time.sleep(5)
@@ -125,9 +142,10 @@ class TriviaServer:
             self.end_game()
 
     def broadcast_leaderboard(self):
-        leaderboard = ",".join([f"{client.getpeername()[0]}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True)])
+        valid_clients = [client for client in self.clients if client.fileno() != -1]
+        leaderboard = ",".join([f"{client.getpeername()[0]}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True) if client in valid_clients])
         print(f"Broadcasting leaderboard: {leaderboard}")
-        for client in self.clients:
+        for client in valid_clients:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))
 
     def end_game(self):
