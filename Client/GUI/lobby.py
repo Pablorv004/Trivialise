@@ -16,8 +16,12 @@ class LobbyWindow:
 
         # Load and display logo
         self.logo_img = self.load_image("resources/logo.png", (200, 200))
-        self.logo_label = tk.Label(master, image=self.logo_img)
-        self.logo_label.pack(pady=20)
+        if self.logo_img:
+            self.logo_label = tk.Label(master, image=self.logo_img)
+            self.logo_label.pack(pady=20)
+        else:
+            self.logo_label = tk.Label(master, text="Logo not found")
+            self.logo_label.pack(pady=20)
 
         # Player list
         self.player_frames = []
@@ -44,9 +48,13 @@ class LobbyWindow:
         self.update_thread.start()
 
     def load_image(self, path, size):
-        image = Image.open(path)
-        image = image.resize(size, Image.LANCZOS)
-        return ImageTk.PhotoImage(image)
+        try:
+            image = Image.open(path)
+            image = image.resize(size, Image.LANCZOS)
+            return ImageTk.PhotoImage(image)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+            return None
 
     def open_settings(self):
         settings_dialog = tk.Toplevel(self.master)

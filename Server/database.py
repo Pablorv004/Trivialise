@@ -34,7 +34,7 @@ class Database:
         self.reconnect()
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
-                       (username, password, 0, 0, 0))
+                    (username, password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
 
@@ -66,7 +66,7 @@ class Database:
         self.reconnect()
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
-                       (totalPoints, roundsPlayed, gamesPlayed, username))
+                    (totalPoints, roundsPlayed, gamesPlayed, username))
         self.connection.commit()
         cursor.close()
 

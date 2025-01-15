@@ -162,6 +162,7 @@ class TriviaServer:
 
     def end_game(self):
         winner = max(self.scores, key=self.scores.get)
+        print("Ending game...")
         for client in self.clients:
             client.sendall(f"END_GAME:Winner is {self.db.get_user_by_ip(client.getpeername()[0])['username']}!".encode('utf-8'))
         self.save_game_data()

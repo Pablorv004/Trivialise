@@ -58,50 +58,71 @@ class GameWindow:
             print(f"Received message: {message}")
             try:
                 if message.startswith("QUESTION:"):
-                    self.question_label.config(text=message.split("QUESTION:")[1])
-                    self.reset_answers()
+                    self.handle_question(message)
                 elif message.startswith("ANSWER_RESULT:"):
-                    parts = message.split("ANSWER_RESULT:")[1].split("|")
-                    correct_answer = parts[0].split(":")[1]
-                    incorrect_answer = parts[1].split(":")[1]
-                    if "LEADERBOARD:" in message:
-                        incorrect_answer = incorrect_answer.split("LEADERBOARD")[0]
-                    self.highlight_answers(correct_answer, incorrect_answer)
-                    if "LEADERBOARD:" in message:
-                        leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
-                        self.update_leaderboard(leaderboard_data)
+                    self.handle_answer_result(message)
                 elif "ANSWER_" in message:
-                    parts = message.split("ANSWER_")
-                    for part in parts[1:]:
-                        if "TIMER:" in part:
-                            answer_key, answer_text = part.split("TIMER:")[0].split(":", 1)
-                            self.update_answer_button(int(answer_key), answer_text)
-                            timer_value = part.split("TIMER:")[1]
-                            self.timer_label.config(text=timer_value)
-                        else:
-                            answer_key, answer_text = part.split(":", 1)
-                            self.update_answer_button(int(answer_key), answer_text)
+                    self.handle_answer_update(message)
                 elif message.startswith("TIMER:"):
-                    self.timer_label.config(text=message.split("TIMER:")[1])
-                    if message.split("TIMER:")[1] == "0":
-                        if self.selected_answer is None:
-                            self.client.send_message("ANSWER:N/A")
-                        self.lock_answers()
+                    self.handle_timer(message)
                 elif message.startswith("LEADERBOARD:"):
-                    leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
-                    self.update_leaderboard(leaderboard_data)
+                    self.handle_leaderboard(message)
                 elif message.startswith("END_GAME:"):
-                    winner_message = message.split("END_GAME:")[1]
-                    messagebox.showinfo("Game Over", winner_message)
+                    self.handle_end_game(message)
                 elif message.startswith("RETURN_TO_LOBBY"):
-                    time.sleep(5)
-                    from .lobby import open_lobby_window
-                    print("Returning to lobby...")
-                    self.master.destroy()
-                    self.master.quit()
-                    open_lobby_window(self.client)
+                    self.handle_return_to_lobby()
             except IndexError:
                 print("Error processing message:", message)
+
+    def handle_question(self, message):
+        self.question_label.config(text=message.split("QUESTION:")[1])
+        self.reset_answers()
+
+    def handle_answer_result(self, message):
+        parts = message.split("ANSWER_RESULT:")[1].split("|")
+        correct_answer = parts[0].split(":")[1]
+        incorrect_answer = parts[1].split(":")[1]
+        if "LEADERBOARD:" in message:
+            incorrect_answer = incorrect_answer.split("LEADERBOARD")[0]
+        self.highlight_answers(correct_answer, incorrect_answer)
+        if "LEADERBOARD:" in message:
+            leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
+            self.update_leaderboard(leaderboard_data)
+
+    def handle_answer_update(self, message):
+        parts = message.split("ANSWER_")
+        for part in parts[1:]:
+            if "TIMER:" in part:
+                answer_key, answer_text = part.split("TIMER:")[0].split(":", 1)
+                self.update_answer_button(int(answer_key), answer_text)
+                timer_value = part.split("TIMER:")[1]
+                self.timer_label.config(text=timer_value)
+            else:
+                answer_key, answer_text = part.split(":", 1)
+                self.update_answer_button(int(answer_key), answer_text)
+
+    def handle_timer(self, message):
+        self.timer_label.config(text=message.split("TIMER:")[1])
+        if message.split("TIMER:")[1] == "0":
+            if self.selected_answer is None:
+                self.client.send_message("ANSWER:N/A")
+            self.lock_answers()
+
+    def handle_leaderboard(self, message):
+        leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
+        self.update_leaderboard(leaderboard_data)
+
+    def handle_end_game(self, message):
+        winner_message = message.split("END_GAME:")[1]
+        messagebox.showinfo("Game Over", winner_message)
+
+    def handle_return_to_lobby(self):
+        time.sleep(5)
+        from .lobby import open_lobby_window
+        print("Returning to lobby...")
+        self.master.destroy()
+        open_lobby_window(self.client)
+        self.master.quit()
 
     def lock_answers(self):
         self.answers_locked = True
