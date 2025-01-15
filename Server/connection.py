@@ -63,6 +63,9 @@ class TriviaServer:
         elif message.startswith("START_GAME:"):
             settings = json.loads(message.split(":", 1)[1])
             self.handle_start_game(client_socket, settings)
+        elif message.startswith("GET_LEADERBOARD:"):
+            order_by = message.split(":")[1]
+            self.handle_get_leaderboard(client_socket, order_by)
 
     def handle_register(self, client_socket, message):
         _, username, password = message.split(":")
@@ -111,10 +114,11 @@ class TriviaServer:
             print("No clients connected. Terminating game.")
             self.end_game()
             return
-        for t in range(timer, 0, -1):
+        for t in range(timer, -1, -1):
             for client in self.clients:
                 client.sendall(f"TIMER:{t}".encode('utf-8'))
-            time.sleep(1)
+            if t > 0:
+                time.sleep(1)
         self.process_answers()
 
     def process_answers(self):
@@ -154,26 +158,41 @@ class TriviaServer:
             client.sendall(f"END_GAME:Winner is {winner.getpeername()[0]}".encode('utf-8'))
         self.save_game_data()
         time.sleep(5)
-        self.reset_game()
+        self.send_players_to_lobby()
 
-    def save_game_data(self):
+    def send_players_to_lobby(self):
         for client in self.clients:
-            username = client.getpeername()[0]
-            score = self.scores[client]
-            user_data = self.db.get_user(username)
-            if user_data:
-                total_points = user_data['totalPoints'] + score
-                rounds_played = user_data['roundsPlayed'] + len(self.questions)
-                games_played = user_data['gamesPlayed'] + 1
-                self.db.update_user(username, total_points, rounds_played, games_played)
+            client.sendall("RETURN_TO_LOBBY".encode('utf-8'))
+        self.reset_game()
 
     def reset_game(self):
         self.current_question_index = 0
         self.scores.clear()
         self.answers.clear()
-        self.fetch_and_broadcast_questions(10, "Any Difficulty", "Any Type")
+        self.questions.clear()
+
+    def save_game_data(self):
+        for client in self.clients:
+            username = client.getpeername()[0]
+            score = self.scores[client]
+            print(f"Saving game data for {username} with score {score}")
+            user_data = self.db.get_user(username)
+            if user_data:
+                total_points = user_data['totalPoints'] + score
+                rounds_played = user_data['roundsPlayed'] + len(self.questions)
+                games_played = user_data['gamesPlayed'] + 1
+                print(f"Updating user {username}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
+                self.db.update_user(username, total_points, rounds_played, games_played)
+            else:
+                print(f"No user data found for {username}")
 
     def fetch_and_broadcast_questions(self, amount, difficulty, qtype):
         self.questions = transform_questions(fetch_questions(amount, difficulty, qtype))
         print(f"Broadcasting {len(self.questions)} questions")
         self.broadcast_question()
+
+    def handle_get_leaderboard(self, client_socket, order_by):
+        print(f"Fetching leaderboard for {order_by}...")
+        leaderboard_data = self.db.get_leaderboard(order_by)
+        print(f"Sending leaderboard data: {leaderboard_data}")
+        client_socket.sendall(json.dumps(leaderboard_data).encode('utf-8'))

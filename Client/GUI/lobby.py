@@ -11,13 +11,11 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("250x600") 
+        self.master.geometry("350x570") 
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
-        logo = Image.open("resources/logo.png")
-        logo = logo.resize((200, 100), Image.LANCZOS)
-        self.logo_img = ImageTk.PhotoImage(logo)
+        self.logo_img = self.load_image("resources/logo.png", (200, 100))
         self.logo_label = tk.Label(master, image=self.logo_img)
         self.logo_label.pack(pady=20)
 
@@ -38,9 +36,17 @@ class LobbyWindow:
         self.leave_button = tk.Button(master, text="Leave", command=self.leave_lobby)
         self.leave_button.pack(side=tk.LEFT, padx=20)
 
+        self.leaderboards_button = tk.Button(master, text="Leaderboards", command=self.open_leaderboards)
+        self.leaderboards_button.pack(side=tk.LEFT, padx=20)
+
         # Start thread to update player list
         self.update_thread = threading.Thread(target=self.update_player_list)
         self.update_thread.start()
+
+    def load_image(self, path, size):
+        image = Image.open(path)
+        image = image.resize(size, Image.LANCZOS)
+        return ImageTk.PhotoImage(image)
 
     def open_settings(self):
         settings_dialog = tk.Toplevel(self.master)
@@ -92,6 +98,48 @@ class LobbyWindow:
             self.client.close_connection()
             self.master.quit()
             self.master.destroy()
+
+    def open_leaderboards(self):
+        print("Opening leaderboards window...")
+        leaderboard_window = tk.Toplevel(self.master)
+        leaderboard_window.title("Leaderboards")
+        leaderboard_window.geometry("400x600")
+
+        def show_leaderboard(data):
+            print("Showing leaderboard data...")
+            for widget in leaderboard_frame.winfo_children():
+                widget.destroy()
+            for i, entry in enumerate(data):
+                username, value = entry
+                label = tk.Label(leaderboard_frame, text=f"{i+1}. {username}: {value}")
+                label.pack(pady=5)
+
+        def fetch_leaderboard(order_by):
+            try:
+                print(f"Fetching leaderboard for {order_by}...")
+                leaderboard_data = self.client.get_leaderboard(order_by)
+                print(f"Leaderboard data received: {leaderboard_data}")
+                show_leaderboard(leaderboard_data)
+            except Exception as e:
+                print(f"Error fetching leaderboard: {e}")
+                messagebox.showerror("Error", "Failed to fetch leaderboard data.")
+
+        leaderboard_frame = tk.Frame(leaderboard_window)
+        leaderboard_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        total_points_button = tk.Button(leaderboard_window, text="Total Points", command=lambda: fetch_leaderboard("totalPoints"))
+        total_points_button.pack(side=tk.TOP, pady=5)
+
+        games_played_button = tk.Button(leaderboard_window, text="Games Played", command=lambda: fetch_leaderboard("gamesPlayed"))
+        games_played_button.pack(side=tk.TOP, pady=5)
+
+        rounds_played_button = tk.Button(leaderboard_window, text="Rounds Played", command=lambda: fetch_leaderboard("roundsPlayed"))
+        rounds_played_button.pack(side=tk.TOP, pady=5)
+
+        return_button = tk.Button(leaderboard_window, text="Return", command=leaderboard_window.destroy)
+        return_button.pack(side=tk.BOTTOM, pady=20)
+
+        fetch_leaderboard("totalPoints")  # Show default leaderboard
 
     def update_player_list(self):
         while True:

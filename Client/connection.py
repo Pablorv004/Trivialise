@@ -1,4 +1,5 @@
 import socket
+import json
 
 class TriviaClient:
     def __init__(self, host='127.0.0.1', port=12345):
@@ -42,3 +43,10 @@ class TriviaClient:
         except Exception as e:
             print(f"Error getting player list: {e}")
             return []
+
+    def get_leaderboard(self, order_by):
+        print(f"Requesting leaderboard for {order_by}...")
+        self.send_message(f"GET_LEADERBOARD:{order_by}")
+        response = self.receive_message()
+        print(f"Received leaderboard response: {response}")
+        return json.loads(response)
