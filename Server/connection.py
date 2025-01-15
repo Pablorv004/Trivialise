@@ -120,7 +120,6 @@ class TriviaServer:
                 client.sendall(f"TIMER:{t}".encode('utf-8'))
             if t > 0:
                 time.sleep(1)
-        self.process_answers()
 
     def process_answers(self):
         question = self.questions[self.current_question_index - 1]
@@ -132,12 +131,12 @@ class TriviaServer:
         if not self.answers:
             print("No answers received.")
             return
-
-        for client, answer in self.answers.items():
-            print(f"Client {client.getpeername()[0]} answered: {answer}")
-            if answer == correct_answer:
-                self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
-            client.sendall(f"ANSWER_RESULT:correct:{correct_answer}|incorrect:{answer}".encode('utf-8'))
+        else:
+            for client, answer in self.answers.items():
+                print(f"Client {client.getpeername()[0]} answered: {answer}")
+                if answer == correct_answer:
+                    self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
+                client.sendall(f"ANSWER_RESULT:correct:{correct_answer}|incorrect:{answer}".encode('utf-8'))
         self.answers.clear()
         self.broadcast_leaderboard()
         time.sleep(5)

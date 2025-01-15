@@ -84,6 +84,8 @@ class GameWindow:
                 elif message.startswith("TIMER:"):
                     self.timer_label.config(text=message.split("TIMER:")[1])
                     if message.split("TIMER:")[1] == "0":
+                        if self.selected_answer is None:
+                            self.client.send_message("ANSWER:N/A")
                         self.lock_answers()
                 elif message.startswith("LEADERBOARD:"):
                     leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
