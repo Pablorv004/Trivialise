@@ -22,7 +22,7 @@ class GameWindow:
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Question area
-        self.question_label = tk.Label(self.left_frame, text="Ready?", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(self.left_frame, text="", wraplength=400, justify=tk.LEFT)
         self.question_label.pack(pady=20)
 
         # Timer
