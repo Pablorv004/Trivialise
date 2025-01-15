@@ -137,7 +137,7 @@ class TriviaServer:
             print(f"Client {client.getpeername()[0]} answered: {answer}")
             if answer == correct_answer:
                 self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
-            client.sendall(f"ANSWER_RESULT:correct:{correct_answer},incorrect:{answer}".encode('utf-8'))
+            client.sendall(f"ANSWER_RESULT:correct:{correct_answer}|incorrect:{answer}".encode('utf-8'))
         self.answers.clear()
         self.broadcast_leaderboard()
         time.sleep(5)
@@ -156,7 +156,7 @@ class TriviaServer:
     def end_game(self):
         winner = max(self.scores, key=self.scores.get)
         for client in self.clients:
-            client.sendall(f"END_GAME:Winner is {winner.getpeername()[0]}".encode('utf-8'))
+            client.sendall(f"END_GAME:Winner is {self.db.get_user_by_ip(client.getpeername()[0])['username']}!".encode('utf-8'))
         self.save_game_data()
         time.sleep(5)
         self.send_players_to_lobby()
@@ -181,7 +181,7 @@ class TriviaServer:
                 total_points = user_data['totalPoints'] + score
                 rounds_played = user_data['roundsPlayed'] + len(self.questions)
                 games_played = user_data['gamesPlayed'] + 1
-                print(f"Updating user {user_data.username}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
+                print(f"Updating user {user_data['username']}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
                 self.db.update_user(user_data['username'], total_points, rounds_played, games_played)
             else:
                 print(f"No user data found for {user_data['username']}")

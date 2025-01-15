@@ -61,7 +61,7 @@ class GameWindow:
                     self.question_label.config(text=message.split("QUESTION:")[1])
                     self.reset_answers()
                 elif message.startswith("ANSWER_RESULT:"):
-                    parts = message.split("ANSWER_RESULT:")[1].split(",")
+                    parts = message.split("ANSWER_RESULT:")[1].split("|")
                     correct_answer = parts[0].split(":")[1]
                     incorrect_answer = parts[1].split(":")[1]
                     if "LEADERBOARD:" in message:
@@ -119,7 +119,7 @@ class GameWindow:
                 btn.config(bg="green")
             if btn.cget("text") == incorrect_answer:
                 btn.config(bg="red")
-            if correct_answer == incorrect_answer:
+            if correct_answer == incorrect_answer and btn.cget("text") == correct_answer:
                 btn.config(bg="green")
 
     def update_answer_button(self, key, text):
