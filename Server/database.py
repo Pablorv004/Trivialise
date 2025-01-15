@@ -73,7 +73,7 @@ class Database:
     def get_leaderboard(self, order_by):
         self.reconnect()
         cursor = self.connection.cursor(dictionary=True)
-        cursor.execute(f"SELECT username, {order_by} FROM users ORDER BY {order_by} DESC")
+        cursor.execute(f"SELECT username, {order_by} FROM users ORDER BY {order_by} DESC LIMIT 10")
         leaderboard = cursor.fetchall()
         cursor.close()
         return [(entry['username'], entry[order_by]) for entry in leaderboard]

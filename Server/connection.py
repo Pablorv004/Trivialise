@@ -6,6 +6,7 @@ from hashlib import sha256
 from trivia_service import fetch_questions
 from trivia_provider import transform_questions
 from database import Database
+import random
 
 class TriviaServer:
     def __init__(self):
@@ -101,10 +102,12 @@ class TriviaServer:
         if self.current_question_index < len(self.questions):
             question = self.questions[self.current_question_index]
             print(f"Broadcasting question: {question['question']}")
+            answers = question['incorrect_answers'] + [question['correct_answer']]
+            random.shuffle(answers) 
+
             for client in self.clients:
-                client.sendall(f"QUESTION:{question['question']}".encode('utf-8'))
-            for client in self.clients:
-                for i, answer in enumerate(question['incorrect_answers'] + [question['correct_answer']]):
+                client.sendall(f"QUESTION:{question['difficulty'].capitalize()} | {question['question']}".encode('utf-8'))
+                for i, answer in enumerate(answers):
                     client.sendall(f"ANSWER_{i+1}:{answer}".encode('utf-8'))
             self.current_question_index += 1
             self.start_timer(question['difficulty'])

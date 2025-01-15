@@ -11,7 +11,7 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("375x670") 
+        self.master.geometry("375x470") 
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
