@@ -88,8 +88,6 @@ class TriviaServer:
         difficulty = settings.get("difficulty", "Any Difficulty")
         qtype = settings.get("type", "Any Type")
         self.fetch_and_broadcast_questions(amount, difficulty, qtype)
-        for client in self.clients:
-            client.sendall("START_GAME_SUCCESS".encode('utf-8'))
 
     def broadcast_question(self):
         if not self.clients:

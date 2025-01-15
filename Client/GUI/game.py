@@ -64,7 +64,12 @@ class GameWindow:
                     parts = message.split("ANSWER_RESULT:")[1].split(",")
                     correct_answer = parts[0].split(":")[1]
                     incorrect_answer = parts[1].split(":")[1]
+                    if "LEADERBOARD:" in message:
+                        incorrect_answer = incorrect_answer.split("LEADERBOARD")[0]
                     self.highlight_answers(correct_answer, incorrect_answer)
+                    if "LEADERBOARD:" in message:
+                        leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
+                        self.update_leaderboard(leaderboard_data)
                 elif "ANSWER_" in message:
                     parts = message.split("ANSWER_")
                     for part in parts[1:]:
@@ -108,7 +113,7 @@ class GameWindow:
             btn.destroy()
         self.answer_buttons.clear()
 
-    def highlight_answers(self, correct_answer, incorrect_answer):
+    def highlight_answers(self, correct_answer, incorrect_answer=None):
         for key, btn in self.answer_buttons.items():
             if btn.cget("text") == correct_answer:
                 btn.config(bg="green")
