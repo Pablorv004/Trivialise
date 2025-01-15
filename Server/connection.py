@@ -17,6 +17,7 @@ class TriviaServer:
         self.answers = {}
         self.scores = {}
         self.db = Database()
+        self.game_ongoing = False
 
     def start_server(self, host='127.0.0.1', port=12345):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,7 +41,7 @@ class TriviaServer:
             print(f"Client {client_ip} disconnected")
             
         while True:
-            if len(self.clients) < self.max_clients:
+            if len(self.clients) < self.max_clients and not self.game_ongoing:
                 try:
                     client_socket, addr = server_socket.accept()
                     self.clients.append(client_socket)
@@ -51,7 +52,10 @@ class TriviaServer:
                 except OSError:
                     break
             else:
-                print("Server is full")
+                if self.game_ongoing:
+                    print("Game is ongoing, new connections are not allowed.")
+                else:
+                    print("Server is full")
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
@@ -88,6 +92,7 @@ class TriviaServer:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
 
     def handle_start_game(self, client_socket, settings):
+        self.game_ongoing = True 
         amount = settings.get("amount", 10)
         difficulty = settings.get("difficulty", "Any Difficulty")
         qtype = settings.get("type", "Any Type")
@@ -162,6 +167,7 @@ class TriviaServer:
         self.save_game_data()
         time.sleep(5)
         self.send_players_to_lobby()
+        self.game_ongoing = False
 
     def send_players_to_lobby(self):
         for client in self.clients:
