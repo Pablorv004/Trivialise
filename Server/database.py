@@ -34,7 +34,7 @@ class Database:
         self.reconnect()
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
-                    (username, password, 0, 0, 0))
+                       (username, password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
 
@@ -66,14 +66,14 @@ class Database:
         self.reconnect()
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
-                    (totalPoints, roundsPlayed, gamesPlayed, username))
+                       (totalPoints, roundsPlayed, gamesPlayed, username))
         self.connection.commit()
         cursor.close()
 
     def get_leaderboard(self, order_by):
         self.reconnect()
         cursor = self.connection.cursor(dictionary=True)
-        cursor.execute(f"SELECT username, {order_by} FROM users ORDER BY {order_by} DESC LIMIT 10")
+        cursor.execute(f"SELECT username, {order_by} FROM users ORDER BY {order_by} DESC")
         leaderboard = cursor.fetchall()
         cursor.close()
         return [(entry['username'], entry[order_by]) for entry in leaderboard]
