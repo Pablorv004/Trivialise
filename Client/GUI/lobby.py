@@ -113,7 +113,7 @@ class LobbyWindow:
         leaderboard_window.title("Leaderboards")
         leaderboard_window.geometry("400x600")
 
-        order_by_var = tk.StringVar(value="totalPoints")
+        order_by_var = tk.StringVar(value="Total Points")
 
         def show_leaderboard(data):
             print("Showing leaderboard data...")
@@ -131,7 +131,12 @@ class LobbyWindow:
         def fetch_leaderboard(order_by):
             try:
                 print(f"Fetching leaderboard for {order_by}...")
-                order_by_var.set(order_by)
+                if order_by == "totalPoints":
+                    order_by_var.set("Total Points")
+                elif order_by == "gamesPlayed":
+                    order_by_var.set("Games Played")
+                elif order_by == "roundsPlayed":
+                    order_by_var.set("Rounds Played")
                 leaderboard_data = self.client.get_leaderboard(order_by)
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
