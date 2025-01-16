@@ -122,7 +122,6 @@ class GameWindow:
         print("Returning to lobby...")
         self.master.destroy()
         open_lobby_window(self.client)
-        self.master.quit()
 
     def lock_answers(self):
         self.answers_locked = True

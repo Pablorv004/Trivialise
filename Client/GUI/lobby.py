@@ -67,7 +67,7 @@ class LobbyWindow:
 
         tk.Label(settings_dialog, text="Difficulty:").pack(pady=5)
         difficulty_var = tk.StringVar(value=self.settings["difficulty"])
-        difficulty_options = ["Any Difficulty", "Easy", "Normal", "Hard"]
+        difficulty_options = ["Any Difficulty", "Easy", "Medium", "Hard"]
         difficulty_menu = tk.OptionMenu(settings_dialog, difficulty_var, *difficulty_options)
         difficulty_menu.pack(pady=5)
         
