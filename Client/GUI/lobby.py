@@ -96,11 +96,6 @@ class LobbyWindow:
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
         self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
-        self.client.receive_message()
-        self.master.destroy()
-        from .game import open_game_window
-        print("Opening game window...")
-        open_game_window(self.client)
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
