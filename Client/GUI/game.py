@@ -79,12 +79,10 @@ class GameWindow:
         self.reset_answers()
 
     def handle_answer_result(self, message):
-        parts = message.split("ANSWER_RESULT:")[1].split("|")
-        correct_answer = parts[0].split(":")[1]
-        incorrect_answer = parts[1].split(":")[1]
+        correct_answer = message.split(":")[2]
         if "LEADERBOARD:" in message:
-            incorrect_answer = incorrect_answer.split("LEADERBOARD")[0]
-        self.highlight_answers(correct_answer, incorrect_answer)
+            correct_answer = correct_answer.split("LEADERBOARD")[0]
+        self.highlight_answers(correct_answer)
         if "LEADERBOARD:" in message:
             leaderboard_data = message.split("LEADERBOARD:")[1].split(",")
             self.update_leaderboard(leaderboard_data)
@@ -104,8 +102,6 @@ class GameWindow:
     def handle_timer(self, message):
         self.timer_label.config(text=message.split("TIMER:")[1])
         if message.split("TIMER:")[1] == "0":
-            if self.selected_answer is None:
-                self.client.send_message("ANSWER:N/A")
             self.lock_answers()
 
     def handle_leaderboard(self, message):
@@ -135,14 +131,12 @@ class GameWindow:
             btn.destroy()
         self.answer_buttons.clear()
 
-    def highlight_answers(self, correct_answer, incorrect_answer=None):
+    def highlight_answers(self, correct_answer):
         for key, btn in self.answer_buttons.items():
             if btn.cget("text") == correct_answer:
                 btn.config(bg="green")
-            if btn.cget("text") == incorrect_answer:
+            elif btn.cget("bg") == "yellow":
                 btn.config(bg="red")
-            if correct_answer == incorrect_answer and btn.cget("text") == correct_answer:
-                btn.config(bg="green")
 
     def update_answer_button(self, key, text):
         if key not in self.answer_buttons:

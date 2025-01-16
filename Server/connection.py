@@ -18,6 +18,7 @@ class TriviaServer:
         self.scores = {}
         self.db = Database()
         self.game_ongoing = False
+        self.received_answers = []
 
     def start_server(self, host='127.0.0.1', port=12345):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,8 +60,7 @@ class TriviaServer:
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
-            self.answers[client_socket] = message.split(":")[1]
-            self.process_answers()
+            self.received_answers.append((client_socket, message.split(":")[1]))
         elif message.startswith("REGISTER:"):
             self.handle_register(client_socket, message)
         elif message.startswith("LOGIN:"):
@@ -128,30 +128,34 @@ class TriviaServer:
                 client.sendall(f"TIMER:{t}".encode('utf-8'))
             if t > 0:
                 time.sleep(1)
-
-    def process_answers(self):
-        question = self.questions[self.current_question_index - 1]
-        correct_answer = question['correct_answer']
-        print(f"Processing answers for question: {question['question']}")
-        print(f"Correct answer: {correct_answer}")
-        print(f"Received answers: {self.answers}")
-
-        if not self.answers:
-            print("No answers received.")
-            return
-        else:
-            for client, answer in self.answers.items():
-                print(f"Client {client.getpeername()[0]} answered: {answer}")
-                if answer == correct_answer:
-                    self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
-                client.sendall(f"ANSWER_RESULT:correct:{correct_answer}|incorrect:{answer}".encode('utf-8'))
-        self.answers.clear()
-        self.broadcast_leaderboard()
+            else:
+                self.process_received_answers()
+                threading.Thread(target=self.start_next_round).start()
+    
+    def start_next_round(self):
         time.sleep(5)
         if self.current_question_index < len(self.questions):
             self.broadcast_question()
         else:
             self.end_game()
+
+    def process_received_answers(self):
+        question = self.questions[self.current_question_index - 1]
+        correct_answer = question['correct_answer']
+        print(f"Processing answers for question: {question['question']}")
+        print(f"Correct answer: {correct_answer}")
+        print(f"Received answers: {self.received_answers}")
+
+        if not self.received_answers:
+            print("No answers received.")
+        for client, answer in self.received_answers:
+            print(f"Client {client.getpeername()[0]} answered: {answer}")
+            if answer == correct_answer:
+                self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
+        for client in self.clients:
+            client.sendall(f"ANSWER_RESULT:correct:{correct_answer}".encode('utf-8'))
+        self.received_answers.clear()
+        self.broadcast_leaderboard()
 
     def broadcast_leaderboard(self):
         valid_clients = [client for client in self.clients if client.fileno() != -1]
