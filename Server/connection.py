@@ -96,7 +96,12 @@ class TriviaServer:
         amount = settings.get("amount", 10)
         difficulty = settings.get("difficulty", "Any Difficulty")
         qtype = settings.get("type", "Any Type")
-        self.fetch_and_broadcast_questions(amount, difficulty, qtype)
+        self.notify_game_start()
+        threading.Thread(target=self.fetch_and_broadcast_questions, args=(amount, difficulty, qtype)).start()
+
+    def notify_game_start(self):
+        for client in self.clients:
+            client.sendall("GAME_START".encode('utf-8'))
 
     def broadcast_question(self):
         if not self.clients:
@@ -115,7 +120,7 @@ class TriviaServer:
                 for i, answer in enumerate(answers):
                     client.sendall(f"ANSWER_{i+1}:{answer}".encode('utf-8'))
             self.current_question_index += 1
-            self.start_timer(question['difficulty'])
+            threading.Thread(target=self.start_timer, args=(question['difficulty'],)).start()
 
     def start_timer(self, difficulty):
         timer = 30 if difficulty == "hard" else 25 if difficulty == "medium" else 20
@@ -145,7 +150,10 @@ class TriviaServer:
         print(f"Processing answers for question: {question['question']}")
         print(f"Correct answer: {correct_answer}")
         print(f"Received answers: {self.received_answers}")
-
+        if not self.clients:
+            print("No clients connected. Terminating game.")
+            self.end_game()
+            return
         if not self.received_answers:
             print("No answers received.")
         for client, answer in self.received_answers:
@@ -165,11 +173,12 @@ class TriviaServer:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))
 
     def end_game(self):
-        winner = max(self.scores, key=self.scores.get)
+        if self.clients:
+            winner = max(self.scores, key=self.scores.get)
+            self.save_game_data()
         print("Ending game...")
         for client in self.clients:
             client.sendall(f"END_GAME:Winner is {self.db.get_user_by_ip(client.getpeername()[0])['username']}!".encode('utf-8'))
-        self.save_game_data()
         time.sleep(5)
         self.send_players_to_lobby()
         self.game_ongoing = False

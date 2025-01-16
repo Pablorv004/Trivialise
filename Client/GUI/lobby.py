@@ -165,9 +165,9 @@ class LobbyWindow:
 
     def update_player_list(self):
         while True:
-            if not self.master.winfo_exists():
-                break
             try:
+                if not self.master.winfo_exists():
+                    break
                 player_list = self.client.get_player_list()
                 for i, frame in enumerate(self.player_frames):
                     for widget in frame.winfo_children():
@@ -179,8 +179,16 @@ class LobbyWindow:
                         player_label = tk.Label(frame, text="Waiting for player...")
                         player_label.pack()
                 time.sleep(1)
+                self.check_for_game_start()
             except tk.TclError:
                 break
+
+    def check_for_game_start(self):
+        message = self.client.receive_message_non_blocking()
+        if message == "GAME_START":
+            self.master.destroy()
+            from .game import open_game_window
+            open_game_window(self.client)
 
 def open_lobby_window(client):
     root = tk.Tk()
