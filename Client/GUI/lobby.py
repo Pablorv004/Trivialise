@@ -94,6 +94,7 @@ class LobbyWindow:
     def start_game(self):
         print("Starting game...")
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
+        self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
         self.client.receive_message()
         self.master.destroy()
@@ -186,6 +187,7 @@ class LobbyWindow:
     def check_for_game_start(self):
         message = self.client.receive_message_non_blocking()
         if message == "GAME_START":
+            self.start_button.config(state=tk.DISABLED)
             self.master.destroy()
             from .game import open_game_window
             open_game_window(self.client)
