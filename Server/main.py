@@ -14,6 +14,11 @@ if __name__ == "__main__":
         user_input = input("Type 'exit' to stop the server: ").strip().lower()
         if user_input == 'exit':
             print("Stopping the server...")
+            for client in server.clients:
+                client.close()
+            server.game_ongoing = False
             break
         else:
             print("Invalid input. Please type 'exit'.")
+    print("Server stopped.")
+    exit()
