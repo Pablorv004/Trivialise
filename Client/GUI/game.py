@@ -47,10 +47,6 @@ class GameWindow:
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
 
-        # Start thread to check for game start
-        self.check_game_start_thread = threading.Thread(target=self.check_for_game_start)
-        self.check_game_start_thread.start()
-
         self.master.bind("<Button-1>", self.on_button_press)
 
     def select_answer(self, answer_key):
@@ -78,6 +74,7 @@ class GameWindow:
                     self.handle_end_game(message)
                 elif message.startswith("RETURN_TO_LOBBY"):
                     self.handle_return_to_lobby()
+                    break
             except IndexError:
                 print("Error processing message:", message)
         
