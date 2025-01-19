@@ -22,7 +22,7 @@ class GameWindow:
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Question area
-        self.question_label = tk.Label(self.left_frame, text="", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT)
         self.question_label.pack(pady=20)
 
         # Timer
@@ -42,7 +42,7 @@ class GameWindow:
 
         self.return_button = tk.Button(self.main_frame, text="Return to Lobby", command=self.return_to_lobby)
         self.return_button.pack(side=tk.BOTTOM, pady=20)
-
+        self.return_button.pack_forget()
         # Start thread to receive questions
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
@@ -78,23 +78,9 @@ class GameWindow:
                     self.handle_end_game(message)
                 elif message.startswith("RETURN_TO_LOBBY"):
                     self.handle_return_to_lobby()
-                elif message.startswith("READY_ACK"):
-                    self.handle_ready_ack()
-                elif message.startswith("START_GAME"):
-                    self.handle_start_game()
             except IndexError:
                 print("Error processing message:", message)
-
-    def check_for_game_start(self):
-        while True:
-            message = self.client.receive_message_non_blocking()
-            if message == "GAME_START":
-                self.handle_start_game()
-                break
-            time.sleep(1)
-
-    def handle_start_game(self):
-        self.return_button.pack_forget()
+        
 
     def handle_question(self, message):
         self.question_label.config(text=message.split("QUESTION:")[1])

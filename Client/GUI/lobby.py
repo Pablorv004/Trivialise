@@ -11,7 +11,7 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("375x470") 
+        self.master.geometry("450x470") 
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
@@ -104,9 +104,12 @@ class LobbyWindow:
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
         self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
+        self.client.receive_message()
         self.master.destroy()
         from .game import open_game_window
+        print("Opening game window...")
         open_game_window(self.client)
+
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
@@ -185,7 +188,7 @@ class LobbyWindow:
                     else:
                         player_label = tk.Label(frame, text="Waiting for player...")
                         player_label.pack()
-                time.sleep(1)
+                time.sleep(5)
             except tk.TclError:
                 break
 
