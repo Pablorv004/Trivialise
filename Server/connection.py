@@ -20,7 +20,7 @@ class TriviaServer:
         self.game_ongoing = False
         self.received_answers = []
 
-    def start_server(self, host='0.0.0.0', port=12346):
+    def start_server(self, host='127.0.0.1', port=12346):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(self.max_clients)

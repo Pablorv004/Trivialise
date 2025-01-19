@@ -13,6 +13,7 @@ class LobbyWindow:
         self.master.title(f"Lobby - {self.username}")
         self.master.geometry("450x470") 
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
+        self.ready = False
 
         # Load and display logo
         self.logo_img = self.load_image("resources/logo.png", (200, 200))
@@ -29,13 +30,17 @@ class LobbyWindow:
             frame = tk.Frame(master, width=200, height=50, relief=tk.RAISED, borderwidth=2)
             frame.pack(pady=5)
             self.player_frames.append(frame)
+            
+        self.start_countdown = 10
+        self.start_label = tk.Label(master, text=f"Waiting for players to ready up...")
+        self.start_label.pack(pady=10)
 
         # Buttons
         self.settings_button = tk.Button(master, text="Settings", command=self.open_settings)
         self.settings_button.pack(side=tk.LEFT, padx=20)
 
-        self.start_button = tk.Button(master, text="Start", command=self.start_game)
-        self.start_button.pack(side=tk.LEFT, padx=20)
+        # self.start_button = tk.Button(master, text="Start", command=self.start_game)
+        # self.start_button.pack(side=tk.LEFT, padx=20)
 
         self.leave_button = tk.Button(master, text="Leave", command=self.leave_lobby)
         self.leave_button.pack(side=tk.LEFT, padx=20)
@@ -43,12 +48,17 @@ class LobbyWindow:
         self.leaderboards_button = tk.Button(master, text="Leaderboards", command=self.open_leaderboards)
         self.leaderboards_button.pack(side=tk.LEFT, padx=20)
 
-        self.ready_button = tk.Button(master, text="Ready", command=self.ready_up)
-        self.ready_button.pack(side=tk.LEFT, padx=20)
+        self.ready_button = tk.Button(master, text="Not ready", background="red", command=self.ready_up)
+        self.ready_button.pack(side=tk.LEFT, padx=10)
+        self.ready_button.config(background="red" if not self.ready else "green")
 
         # Start thread to update player list
         self.update_thread = threading.Thread(target=self.update_player_list)
         self.update_thread.start()
+        
+        # Start thread to check for ready players
+        self.ready_thread = threading.Thread(target=self.update_ready_countdown)
+        self.ready_thread.start()
 
     def load_image(self, path, size):
         try:
@@ -95,14 +105,17 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
     def ready_up(self):
-        self.master.destroy()
-        from .game import open_game_window
-        open_game_window(self.client)
+        # self.master.destroy()
+        # from .game import open_game_window
+        # open_game_window(self.client)
+        self.ready = not self.ready
+        self.ready_button.config(text="Ready" if self.ready else "Not ready")
+        self.ready_button.config(background="red" if not self.ready else "green")
 
     def start_game(self):
         print("Starting game...")
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
-        self.start_button.config(state=tk.DISABLED)
+        # self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
         self.client.receive_message()
         self.master.destroy()
@@ -174,23 +187,35 @@ class LobbyWindow:
         fetch_leaderboard("totalPoints")  # Show default leaderboard
 
     def update_player_list(self):
-        while True:
-            try:
-                if not self.master.winfo_exists():
-                    break
-                player_list = self.client.get_player_list()
-                for i, frame in enumerate(self.player_frames):
-                    for widget in frame.winfo_children():
-                        widget.destroy()
-                    if i < len(player_list):
-                        player_label = tk.Label(frame, text=player_list[i])
-                        player_label.pack()
-                    else:
-                        player_label = tk.Label(frame, text="Waiting for player...")
-                        player_label.pack()
-                time.sleep(5)
-            except tk.TclError:
-                break
+        if not self.master.winfo_exists():
+            return
+        player_list = self.client.get_player_list()
+        for i, frame in enumerate(self.player_frames):
+            for widget in frame.winfo_children():
+                widget.destroy()
+            if i < len(player_list):
+                player_label = tk.Label(frame, text=player_list[i])
+                player_label.pack()
+            else:
+                player_label = tk.Label(frame, text="Waiting for player...")
+                player_label.pack()
+        self.master.after(5000, self.update_player_list) 
+            
+    # Handles the countdown to start the game
+    def update_ready_countdown(self):
+        if not self.master.winfo_exists():
+            return
+        if self.ready:
+            self.client.send_message("READY")
+            self.start_countdown -= 1
+            self.start_label.config(text=f"Game starting in {self.start_countdown} seconds")
+            if self.start_countdown == 0:
+                self.start_game()
+                return
+        else:
+            self.start_countdown = 5
+            self.start_label.config(text=f"Waiting for players to ready up...")
+        self.master.after(1000, self.update_ready_countdown)
 
 def open_lobby_window(client):
     root = tk.Tk()
