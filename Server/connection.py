@@ -221,6 +221,11 @@ class TriviaServer:
         client_socket.sendall(f"{message}".encode('utf-8'))
 
     def handle_get_usernames(self, client_socket):
-        usernames = [self.db.get_user_by_ip(client.getpeername()[0])['username'] for client in self.clients if client.fileno() != -1]
+        usernames = []
+        for client in self.clients:
+            if client.fileno() != -1:
+                user = self.db.get_user_by_ip(client.getpeername()[0])
+                if user:
+                    usernames.append(user['username'])
         usernames_str = ",".join(usernames)
         client_socket.sendall(f"{usernames_str}".encode('utf-8'))

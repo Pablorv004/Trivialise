@@ -22,7 +22,7 @@ class GameWindow:
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Question area
-        self.question_label = tk.Label(self.left_frame, text="", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT)
         self.question_label.pack(pady=20)
 
         # Timer
@@ -40,9 +40,16 @@ class GameWindow:
         self.leaderboard_labels = []
         self.update_leaderboard([])  # Initialize leaderboard
 
+        self.return_button = tk.Button(self.main_frame, text="Return to Lobby", command=self.return_to_lobby)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
+        self.return_button.pack_forget()
         # Start thread to receive questions
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
+
+        # Start thread to check for game start
+        self.check_game_start_thread = threading.Thread(target=self.check_for_game_start)
+        self.check_game_start_thread.start()
 
         self.master.bind("<Button-1>", self.on_button_press)
 
@@ -73,6 +80,7 @@ class GameWindow:
                     self.handle_return_to_lobby()
             except IndexError:
                 print("Error processing message:", message)
+        
 
     def handle_question(self, message):
         self.question_label.config(text=message.split("QUESTION:")[1])
@@ -111,11 +119,13 @@ class GameWindow:
     def handle_end_game(self, message):
         winner_message = message.split("END_GAME:")[1]
         messagebox.showinfo("Game Over", winner_message)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
 
     def handle_return_to_lobby(self):
-        time.sleep(5)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
+
+    def return_to_lobby(self):
         from .lobby import open_lobby_window
-        print("Returning to lobby...")
         self.master.destroy()
         open_lobby_window(self.client)
 
