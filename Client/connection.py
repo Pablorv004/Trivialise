@@ -25,7 +25,10 @@ class TriviaClient:
 
     def receive_message(self):
         try:
-            return self.client_socket.recv(1024).decode('utf-8')
+            message = self.client_socket.recv(1024).decode('utf-8')
+            if message == "READY_ACK":
+                print("Ready acknowledged by server.")
+            return message
         except ConnectionResetError:
             print("Connection closed by the server.")
             self.close_connection()

@@ -43,6 +43,9 @@ class LobbyWindow:
         self.leaderboards_button = tk.Button(master, text="Leaderboards", command=self.open_leaderboards)
         self.leaderboards_button.pack(side=tk.LEFT, padx=20)
 
+        self.ready_button = tk.Button(master, text="Ready", command=self.ready_up)
+        self.ready_button.pack(side=tk.LEFT, padx=20)
+
         # Start thread to update player list
         self.update_thread = threading.Thread(target=self.update_player_list)
         self.update_thread.start()
@@ -91,11 +94,19 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Cancel", command=settings_dialog.destroy).pack(side=tk.LEFT, padx=20, pady=20)
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
+    def ready_up(self):
+        self.master.destroy()
+        from .game import open_game_window
+        open_game_window(self.client)
+
     def start_game(self):
         print("Starting game...")
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
         self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
+        self.master.destroy()
+        from .game import open_game_window
+        open_game_window(self.client)
 
     def leave_lobby(self):
         if messagebox.askokcancel("Leave Lobby", "Are you sure you want to leave the lobby?"):
@@ -175,17 +186,8 @@ class LobbyWindow:
                         player_label = tk.Label(frame, text="Waiting for player...")
                         player_label.pack()
                 time.sleep(1)
-                self.check_for_game_start()
             except tk.TclError:
                 break
-
-    def check_for_game_start(self):
-        message = self.client.receive_message_non_blocking()
-        if message == "GAME_START":
-            self.start_button.config(state=tk.DISABLED)
-            self.master.destroy()
-            from .game import open_game_window
-            open_game_window(self.client)
 
 def open_lobby_window(client):
     root = tk.Tk()

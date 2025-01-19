@@ -40,9 +40,16 @@ class GameWindow:
         self.leaderboard_labels = []
         self.update_leaderboard([])  # Initialize leaderboard
 
+        self.return_button = tk.Button(self.main_frame, text="Return to Lobby", command=self.return_to_lobby)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
+
         # Start thread to receive questions
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
+
+        # Start thread to check for game start
+        self.check_game_start_thread = threading.Thread(target=self.check_for_game_start)
+        self.check_game_start_thread.start()
 
         self.master.bind("<Button-1>", self.on_button_press)
 
@@ -71,8 +78,23 @@ class GameWindow:
                     self.handle_end_game(message)
                 elif message.startswith("RETURN_TO_LOBBY"):
                     self.handle_return_to_lobby()
+                elif message.startswith("READY_ACK"):
+                    self.handle_ready_ack()
+                elif message.startswith("START_GAME"):
+                    self.handle_start_game()
             except IndexError:
                 print("Error processing message:", message)
+
+    def check_for_game_start(self):
+        while True:
+            message = self.client.receive_message_non_blocking()
+            if message == "GAME_START":
+                self.handle_start_game()
+                break
+            time.sleep(1)
+
+    def handle_start_game(self):
+        self.return_button.pack_forget()
 
     def handle_question(self, message):
         self.question_label.config(text=message.split("QUESTION:")[1])
@@ -111,11 +133,13 @@ class GameWindow:
     def handle_end_game(self, message):
         winner_message = message.split("END_GAME:")[1]
         messagebox.showinfo("Game Over", winner_message)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
 
     def handle_return_to_lobby(self):
-        time.sleep(5)
+        self.return_button.pack(side=tk.BOTTOM, pady=20)
+
+    def return_to_lobby(self):
         from .lobby import open_lobby_window
-        print("Returning to lobby...")
         self.master.destroy()
         open_lobby_window(self.client)
 
