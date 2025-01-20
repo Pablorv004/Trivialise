@@ -79,6 +79,14 @@ class TriviaServer:
             self.handle_ready_client(client_socket)
         elif message.startswith("NOT_READY"):
             self.handle_unready_client(client_socket)
+        elif message.startswith("CHECK_READY"):
+            self.check_ready_clients(client_socket)
+            
+    def check_ready_clients(self, client_socket):
+        if len(self.ready_clients) == len(self.clients) and all(self.ready_clients.values()):
+            client_socket.sendall("ALL_READY".encode('utf-8'))
+        else:
+            client_socket.sendall("NOT_ALL_READY".encode('utf-8'))
                     
     # This function handles the clients that are ready
     def handle_ready_client(self, client_socket):
@@ -154,13 +162,24 @@ class TriviaServer:
                 threading.Thread(target=self.start_next_round).start()
                 
     def start_game_timer(self):
-        timer = 10
-        for t in range(timer, -1, -1):
-            if (len(self.ready_clients) == len(self.clients)):
-                for client in self.clients:
-                    client.sendall(f"COUNTDOWN_TIMER: {t}".encode('utf-8'))
-                if t > 0:
+        def countdown():
+            timer = 10
+            while timer >= 0:
+                if len(self.ready_clients) == len(self.clients) and all(self.ready_clients.values()):
+                    for client in self.clients:
+                        client.sendall(f"COUNTDOWN_TIMER:{timer}".encode('utf-8'))
+                    if timer == 0:
+                        self.start_game()
+                        return
+                    timer -= 1
                     time.sleep(1)
+                else:
+                    for client in self.clients:
+                        client.sendall("COUNTDOWN_ABORTED".encode('utf-8'))
+                    return
+
+        countdown_thread = threading.Thread(target=countdown)
+        countdown_thread.start()
     
     def start_next_round(self):
         time.sleep(5)

@@ -15,6 +15,9 @@ class LobbyWindow:
         self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
         self.ready = False
         self.counting_down = False
+        self.updating_users = True
+        self.update_event = threading.Event()
+        self.update_event.set()
 
         # Load and display logo
         self.logo_img = self.load_image("resources/logo.png", (200, 200))
@@ -101,12 +104,6 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Cancel", command=settings_dialog.destroy).pack(side=tk.LEFT, padx=20, pady=20)
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
-    def ready_up(self):
-        self.ready = not self.ready
-        self.client.ready_client(self.ready)
-        self.counting_down = True if self.ready else False
-        self.ready_button.config(text="Ready" if self.ready else "Not ready")
-        self.ready_button.config(background="red" if not self.ready else "green")
 
     def start_game(self):
         print("Starting game...")
@@ -180,37 +177,59 @@ class LobbyWindow:
         return_button.pack(side=tk.BOTTOM, pady=20)
 
         fetch_leaderboard("totalPoints")  # Show default leaderboard
+        
+    def ready_up(self):
+        self.ready = not self.ready
+        self.client.ready_client(self.ready)
+        self.ready_button.config(text="Ready" if self.ready else "Not ready")
+        self.ready_button.config(background="red" if not self.ready else "green")
+        self.counting_down = self.client.check_all_ready()
 
     def update_player_list(self):
-        player_list = self.client.get_player_list()
-        for i, frame in enumerate(self.player_frames):
-            for widget in frame.winfo_children():
-                widget.destroy()
-            if i < len(player_list):
-                player_label = tk.Label(frame, text=player_list[i])
-                player_label.pack()
-            else:
-                player_label = tk.Label(frame, text="Waiting for player...")
-                player_label.pack()
-        self.master.after(5000, self.update_player_list) 
+        while True:
+            self.update_event.wait()
+            if not self.updating_users:
+                continue
+            print("Updating player list...")
+            player_list = self.client.get_player_list()
+            for i, frame in enumerate(self.player_frames):
+                for widget in frame.winfo_children():
+                    widget.destroy()
+                if i < len(player_list):
+                    player_label = tk.Label(frame, text=player_list[i])
+                    player_label.pack()
+                else:
+                    player_label = tk.Label(frame, text="Waiting for player...")
+                    player_label.pack()
+            time.sleep(1)
             
     # Handles the countdown to start the game
     def update_ready_countdown(self):
+        print("Entering countdown function...")
         if self.counting_down:
+            self.update_event.clear()
+            self.updating_users = False
             countdown_time = 10
-            message = self.client.receive_message_non_blocking()
-            print(message)
-            if message and message.startswith("COUNTDOWN_TIMER:"):
-                countdown_time = int(message.split(":")[1].strip())
-                self.start_label.config(text=f"Game starting in {countdown_time} seconds")
-            if countdown_time == 0:
-                self.start_game()
-                return
-            elif message == "NOT_ALL_READY":
-                self.start_label.config(text="Waiting for players to ready up...")
-            self.master.after(1000, self.update_ready_countdown)
+            while countdown_time > 0:
+                message = self.client.receive_message_non_blocking()
+                print("Received countdown response from server: ", message)
+                if message and message.startswith("COUNTDOWN_TIMER:"):
+                    countdown_time = int(message.split(":")[1].strip())
+                    self.start_label.config(text=f"Game starting in {countdown_time} seconds")
+                if countdown_time == 0:
+                    self.start_game()
+                    return
+                elif message == "COUNTDOWN_ABORTED":
+                    self.start_label.config(text="Waiting for players to ready up...")
+                    self.updating_users = True
+                    self.update_event.set()
+                    return
+                time.sleep(1)
+                countdown_time -= 1
+            self.start_game()
         else:
             return
+            
 
 def open_lobby_window(client):
     root = tk.Tk()
