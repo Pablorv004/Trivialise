@@ -39,6 +39,7 @@ class TriviaServer:
                     break
             client_socket.close()
             self.clients.remove(client_socket)
+            self.scores.pop(client_socket, None)
             print(f"Client {client_ip} disconnected")
             
         while True:
@@ -55,8 +56,10 @@ class TriviaServer:
             else:
                 if self.game_ongoing:
                     print("Game is ongoing, new connections are not allowed.")
+                    break
                 else:
                     print("Server is full")
+                    break
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
@@ -179,6 +182,7 @@ class TriviaServer:
             self.save_game_data()
             for client in self.clients:
                 client.sendall(f"END_GAME:Winner is {winner_username}!".encode('utf-8'))
+                self.scores[client] = 0
         else:
             print("No clients or scores available to determine a winner.")
         print("Ending game...")
@@ -193,7 +197,6 @@ class TriviaServer:
 
     def reset_game(self):
         self.current_question_index = 0
-        self.scores.clear()
         self.answers.clear()
         self.questions.clear()
 
