@@ -19,6 +19,7 @@ class TriviaServer:
         self.db = Database()
         self.game_ongoing = False
         self.received_answers = []
+        self.ready_clients = {}
 
     def start_server(self, host='127.0.0.1', port=12346):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,6 +40,7 @@ class TriviaServer:
                     break
             client_socket.close()
             self.clients.remove(client_socket)
+            self.ready_clients.pop(client_socket, None)
             print(f"Client {client_ip} disconnected")
             
         while True:
@@ -73,7 +75,21 @@ class TriviaServer:
             self.handle_get_leaderboard(client_socket, order_by)
         elif message.startswith("GET_USERNAMES"):
             self.handle_get_usernames(client_socket)
-
+        elif message.startswith("READY"):
+            self.handle_ready_client(client_socket)
+        elif message.startswith("NOT_READY"):
+            self.handle_unready_client(client_socket)
+                    
+    # This function handles the clients that are ready
+    def handle_ready_client(self, client_socket):
+        self.ready_clients[client_socket] = True
+        if (len(self.ready_clients) == len(self.clients)) and all(self.ready_clients.values()):
+            self.start_game_timer()
+                
+    # This function handles the clients that click "Not Ready" button
+    def handle_unready_client(self, client_socket):
+        self.ready_clients[client_socket] = False
+    
     def handle_register(self, client_socket, message):
         _, username, password = message.split(":")
         if self.db.get_user(username):
@@ -136,6 +152,20 @@ class TriviaServer:
             else:
                 self.process_received_answers()
                 threading.Thread(target=self.start_next_round).start()
+                
+    def start_game_timer(self):
+        timer = 10
+        for t in range(timer, -1, -1):
+            if (len(self.ready_clients) == len(self.clients)):
+                for client in self.clients:
+                    client.sendall(f"COUNTDOWN_TIMER: {t}".encode('utf-8'))
+                if t > 0:
+                    time.sleep(1)
+            else:
+                for client in self.clients:
+                    client.sendall("NOT_ALL_READY".encode('utf-8'))
+                print("Not all clients are ready. Cancelling game start.")
+                break
     
     def start_next_round(self):
         time.sleep(5)

@@ -31,16 +31,12 @@ class LobbyWindow:
             frame.pack(pady=5)
             self.player_frames.append(frame)
             
-        self.start_countdown = 10
         self.start_label = tk.Label(master, text=f"Waiting for players to ready up...")
         self.start_label.pack(pady=10)
 
         # Buttons
         self.settings_button = tk.Button(master, text="Settings", command=self.open_settings)
         self.settings_button.pack(side=tk.LEFT, padx=20)
-
-        # self.start_button = tk.Button(master, text="Start", command=self.start_game)
-        # self.start_button.pack(side=tk.LEFT, padx=20)
 
         self.leave_button = tk.Button(master, text="Leave", command=self.leave_lobby)
         self.leave_button.pack(side=tk.LEFT, padx=20)
@@ -105,17 +101,14 @@ class LobbyWindow:
         tk.Button(settings_dialog, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=20, pady=20)
 
     def ready_up(self):
-        # self.master.destroy()
-        # from .game import open_game_window
-        # open_game_window(self.client)
         self.ready = not self.ready
+        self.client.ready_client(self.ready)
         self.ready_button.config(text="Ready" if self.ready else "Not ready")
         self.ready_button.config(background="red" if not self.ready else "green")
 
     def start_game(self):
         print("Starting game...")
         settings_message = f"START_GAME:{json.dumps(self.settings)}"
-        # self.start_button.config(state=tk.DISABLED)
         self.client.send_message(settings_message)
         self.client.receive_message()
         self.master.destroy()
@@ -203,18 +196,17 @@ class LobbyWindow:
             
     # Handles the countdown to start the game
     def update_ready_countdown(self):
+        message = self.client.receive_message_non_blocking()
         if not self.master.winfo_exists():
             return
-        if self.ready:
-            self.client.send_message("READY")
-            self.start_countdown -= 1
-            self.start_label.config(text=f"Game starting in {self.start_countdown} seconds")
-            if self.start_countdown == 0:
-                self.start_game()
-                return
-        else:
-            self.start_countdown = 5
-            self.start_label.config(text=f"Waiting for players to ready up...")
+        if message and message.startswith("COUNTDOWN_TIMER:"):
+            countdown_time = int(message.split(":")[1].strip())
+            self.start_label.config(text=f"Game starting in {countdown_time} seconds")
+        if countdown_time == 0:
+            self.start_game()
+            return
+        elif message == "NOT_ALL_READY":
+            self.start_label.config(text="Waiting for players to ready up...")
         self.master.after(1000, self.update_ready_countdown)
 
 def open_lobby_window(client):
