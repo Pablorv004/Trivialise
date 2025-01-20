@@ -68,5 +68,3 @@ class TriviaClient:
     
     def ready_client(self, ready):
         self.send_message("READY" if ready else "NOT_READY")
-        response = self.receive_message_non_blocking()
-        print("RECEIVED READY RESPONSE: ", response)

@@ -161,11 +161,6 @@ class TriviaServer:
                     client.sendall(f"COUNTDOWN_TIMER: {t}".encode('utf-8'))
                 if t > 0:
                     time.sleep(1)
-            else:
-                for client in self.clients:
-                    client.sendall("NOT_ALL_READY".encode('utf-8'))
-                print("Not all clients are ready. Cancelling game start.")
-                break
     
     def start_next_round(self):
         time.sleep(5)
