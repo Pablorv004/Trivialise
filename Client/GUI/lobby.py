@@ -174,23 +174,18 @@ class LobbyWindow:
         fetch_leaderboard("totalPoints")  # Show default leaderboard
 
     def update_player_list(self):
-        while True:
-            try:
-                if not self.master.winfo_exists():
-                    break
-                player_list = self.client.get_player_list()
-                for i, frame in enumerate(self.player_frames):
-                    for widget in frame.winfo_children():
-                        widget.destroy()
-                    if i < len(player_list):
-                        player_label = tk.Label(frame, text=player_list[i])
-                        player_label.pack()
-                    else:
-                        player_label = tk.Label(frame, text="Waiting for player...")
-                        player_label.pack()
-                time.sleep(5)
-            except tk.TclError:
-                break
+        player_list = self.client.get_player_list()
+        for i, frame in enumerate(self.player_frames):
+            for widget in frame.winfo_children():
+                widget.destroy()
+            if i < len(player_list):
+                player_label = tk.Label(frame, text=player_list[i])
+                player_label.pack()
+            else:
+                player_label = tk.Label(frame, text="Waiting for player...")
+                player_label.pack()
+        if self.master.winfo_exists():
+            self.master.after(3000, self.update_player_list)
 
 def open_lobby_window(client):
     root = tk.Tk()
