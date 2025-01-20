@@ -173,12 +173,15 @@ class TriviaServer:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))
 
     def end_game(self):
-        if self.clients:
+        if self.clients and self.scores:
             winner = max(self.scores, key=self.scores.get)
+            winner_username = self.db.get_user_by_ip(winner.getpeername()[0])['username']
             self.save_game_data()
+            for client in self.clients:
+                client.sendall(f"END_GAME:Winner is {winner_username}!".encode('utf-8'))
+        else:
+            print("No clients or scores available to determine a winner.")
         print("Ending game...")
-        for client in self.clients:
-            client.sendall(f"END_GAME:Winner is {self.db.get_user_by_ip(client.getpeername()[0])['username']}!".encode('utf-8'))
         time.sleep(5)
         self.send_players_to_lobby()
         self.game_ongoing = False
