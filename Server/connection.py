@@ -17,6 +17,7 @@ class TriviaServer:
         self.round_timer = 0
         self.answers = {}
         self.scores = {}
+        self.round_gained_scores = {}
         self.db = Database()
         self.game_ongoing = False
         self.received_answers = []
@@ -42,6 +43,7 @@ class TriviaServer:
             client_socket.close()
             self.clients.remove(client_socket)
             self.scores.pop(client_socket, None)
+            self.round_gained_scores.pop(client_socket, None)
             self.logged_in_clients.pop(client_socket, None)
             print(f"Client {client_ip} disconnected")
             
@@ -52,6 +54,7 @@ class TriviaServer:
                     client_socket.sendall("CONNECTED".encode('utf-8'))
                     self.clients.append(client_socket)
                     self.scores[client_socket] = 0
+                    self.round_gained_scores[client_socket] = 0
                     print(f"Connection from {addr}")
                     client_handler = threading.Thread(target=handle_client, args=(client_socket,))
                     client_handler.start()
@@ -170,8 +173,12 @@ class TriviaServer:
         for client, answer, time_answered in self.received_answers:
             if client.fileno() != -1:
                 print(f"Client {client.getpeername()[0]} answered: {answer} in time: {time_answered}")
+                score_formula = 100 + (10 if question['difficulty'] == "hard" else 8 if question['difficulty'] == "medium" else 6) * (30 if time_answered > 25 else 25 if time_answered > 20 else 20 if time_answered > 15 else 15 if time_answered > 10 else 10 if time_answered > 5 else 5)
                 if answer == correct_answer:
-                    self.scores[client] += 100 + (10 if question['difficulty'] == "hard" else 8 if question['difficulty'] == "medium" else 5) * (30 if time_answered > 30 else 20 if time_answered > 20 else 10)
+                    self.scores[client] += score_formula
+                    self.round_gained_scores[client] = score_formula
+                else:
+                    self.round_gained_scores[client] = 0
         for client in self.clients:
             if client.fileno() != -1:
                 client.sendall(f"ANSWER_RESULT:correct:{correct_answer}".encode('utf-8'))
@@ -180,7 +187,7 @@ class TriviaServer:
 
     def broadcast_leaderboard(self):
         valid_clients = [client for client in self.clients if client.fileno() != -1]
-        leaderboard = ",".join([f"{self.db.get_user_by_ip(client.getpeername()[0])['username']}:{score}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True) if client in valid_clients])
+        leaderboard = ",".join([f"{self.db.get_user_by_ip(client.getpeername()[0])['username']}:{score}|{self.round_gained_scores.get(client, 0)}" for client, score in sorted(self.scores.items(), key=lambda item: item[1], reverse=True) if client in valid_clients])
         print(f"Broadcasting leaderboard: {leaderboard}")
         for client in valid_clients:
             client.sendall(f"LEADERBOARD:{leaderboard}".encode('utf-8'))

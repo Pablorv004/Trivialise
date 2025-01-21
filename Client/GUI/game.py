@@ -46,8 +46,6 @@ class GameWindow:
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
 
-        self.master.bind("<Button-1>", self.on_button_press)
-
     def select_answer(self, answer_key):
         if self.selected_answer is None and not self.answers_locked:
             self.selected_answer = answer_key
@@ -158,18 +156,12 @@ class GameWindow:
         i = 1
         for entry in data:
             username, score = entry.split(":")
-            label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {score}")
+            total_score, round_score = score.split("|")
+            label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {total_score} (+{round_score})")
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
             i+=1
-
-    def on_button_press(self, event):
-        widget = event.widget
-        for key, btn in self.answer_buttons.items():
-            if widget == btn:
-                self.select_answer(key)
-                break
-
+    
 def open_game_window(client):
     print("Creating game window...")
     root = tk.Tk()
