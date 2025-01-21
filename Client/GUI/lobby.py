@@ -147,7 +147,8 @@ class LobbyWindow:
                     order_by_var.set("Games Played")
                 elif order_by == "roundsPlayed":
                     order_by_var.set("Rounds Played")
-                leaderboard_data = self.client.get_leaderboard(order_by)
+                self.client.send_message(f"GET_LEADERBOARD:{order_by}")
+                leaderboard_data = self.client.receive_message_non_blocking()
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
             except Exception as e:
@@ -171,26 +172,27 @@ class LobbyWindow:
         return_button = tk.Button(leaderboard_window, text="Return", command=leaderboard_window.destroy)
         return_button.pack(side=tk.BOTTOM, pady=20)
 
-        fetch_leaderboard("totalPoints")  # Show default leaderboard
+        fetch_leaderboard("totalPoints")
 
     def update_player_list(self):
-        while True:
-            try:
-                if not self.master.winfo_exists():
-                    break
-                player_list = self.client.get_player_list()
-                for i, frame in enumerate(self.player_frames):
-                    for widget in frame.winfo_children():
-                        widget.destroy()
-                    if i < len(player_list):
-                        player_label = tk.Label(frame, text=player_list[i])
-                        player_label.pack()
-                    else:
-                        player_label = tk.Label(frame, text="Waiting for player...")
-                        player_label.pack()
-                time.sleep(5)
-            except tk.TclError:
-                break
+        self.client.send_message("GET_USERNAMES")
+        try:
+            message = self.client.receive_message_non_blocking()
+            player_list = message.split(",") if message else []
+        except Exception as e:
+            print(f"Error getting player list: {e}")
+            return
+        for i, frame in enumerate(self.player_frames):
+            for widget in frame.winfo_children():
+                widget.destroy()
+            if i < len(player_list):
+                player_label = tk.Label(frame, text=player_list[i])
+                player_label.pack()
+            else:
+                player_label = tk.Label(frame, text="Waiting for player...")
+                player_label.pack()
+        if self.master.winfo_exists():
+            self.master.after(3000, self.update_player_list)
 
 def open_lobby_window(client):
     root = tk.Tk()
