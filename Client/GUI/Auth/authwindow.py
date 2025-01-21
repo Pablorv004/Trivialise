@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from hashlib import sha256
 from GUI.lobby import open_lobby_window
+import threading
 
 class EstablishNameWindow:
     def __init__(self, master, client):
@@ -187,6 +188,9 @@ class NickSelectorWindow:
 
     def submit_nickname(self):
         nickname = self.nickname_entry.get()
+        threading.Thread(target=self.send_nickname, args=(nickname,)).start()
+
+    def send_nickname(self, nickname):
         self.client.send_message(f"NICK:{nickname}")
         response = self.client.receive_message_non_blocking()
         print("Response:", response)
