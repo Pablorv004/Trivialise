@@ -173,7 +173,7 @@ class TriviaServer:
         for client, answer, time_answered in self.received_answers:
             if client.fileno() != -1:
                 print(f"Client {client.getpeername()[0]} answered: {answer} in time: {time_answered}")
-                score_formula = 100 + (10 if question['difficulty'] == "hard" else 8 if question['difficulty'] == "medium" else 6) * (30 if time_answered > 25 else 25 if time_answered > 20 else 20 if time_answered > 15 else 15 if time_answered > 10 else 10 if time_answered > 5 else 5)
+                score_formula = 100 + round((10 if question['difficulty'] == "hard" else 8 if question['difficulty'] == "medium" else 6) * (25 if time_answered > 25 else 22 if time_answered > 20 else 20 if time_answered > 15 else 16 if time_answered > 10 else 12 if time_answered > 5 else 8) * (0.8 if question['type'] == "boolean" else 1))
                 if answer == correct_answer:
                     self.scores[client] += score_formula
                     self.round_gained_scores[client] = score_formula

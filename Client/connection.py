@@ -49,19 +49,3 @@ class TriviaClient:
         self.client_socket.close()
         print("Connection closed.")
         exit()
-
-    def get_player_list(self):
-        try:
-            self.send_message("GET_USERNAMES")
-            player_list = self.receive_message_non_blocking()
-            return player_list.split(",") if player_list else []
-        except Exception as e:
-            print(f"Error getting player list: {e}")
-            return []
-
-    def get_leaderboard(self, order_by):
-        print(f"Requesting leaderboard for {order_by}...")
-        self.send_message(f"GET_LEADERBOARD:{order_by}")
-        response = self.receive_message_non_blocking()
-        print(f"Received leaderboard response: {response}")
-        return response

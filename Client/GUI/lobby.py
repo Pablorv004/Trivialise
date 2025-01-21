@@ -147,7 +147,8 @@ class LobbyWindow:
                     order_by_var.set("Games Played")
                 elif order_by == "roundsPlayed":
                     order_by_var.set("Rounds Played")
-                leaderboard_data = self.client.get_leaderboard(order_by)
+                self.client.send_message(f"GET_LEADERBOARD:{order_by}")
+                leaderboard_data = self.client.receive_message_non_blocking()
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
             except Exception as e:
@@ -174,7 +175,13 @@ class LobbyWindow:
         fetch_leaderboard("totalPoints")
 
     def update_player_list(self):
-        player_list = self.client.get_player_list()
+        self.client.send_message("GET_USERNAMES")
+        try:
+            message = self.client.receive_message_non_blocking()
+            player_list = message.split(",") if message else []
+        except Exception as e:
+            print(f"Error getting player list: {e}")
+            return
         for i, frame in enumerate(self.player_frames):
             for widget in frame.winfo_children():
                 widget.destroy()
