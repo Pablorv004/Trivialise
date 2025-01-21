@@ -129,7 +129,7 @@ class TriviaServer:
             random.shuffle(answers) 
 
             for client in self.clients:
-                client.sendall(f"QUESTION:{question['difficulty'].capitalize()} | {question['question']}".encode('utf-8'))
+                client.sendall(f"QUESTION:{question['difficulty'].title()}|{question['category'].title()}|{question['question']}".encode('utf-8'))
                 for i, answer in enumerate(answers):
                     client.sendall(f"ANSWER_{i+1}:{answer}".encode('utf-8'))
             self.current_question_index += 1
@@ -179,8 +179,11 @@ class TriviaServer:
                     self.round_gained_scores[client] = score_formula
                 else:
                     self.round_gained_scores[client] = 0
+            
         for client in self.clients:
             if client.fileno() != -1:
+                if client not in [answer[0] for answer in self.received_answers]:
+                    self.round_gained_scores[client] = 0
                 client.sendall(f"ANSWER_RESULT:correct:{correct_answer}".encode('utf-8'))
         self.received_answers.clear()
         self.broadcast_leaderboard()

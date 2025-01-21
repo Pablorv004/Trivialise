@@ -9,7 +9,7 @@ class GameWindow:
         self.master = master
         self.client = client
         self.master.title("Trivia Game")
-        self.master.geometry("600x350")
+        self.master.geometry("650x430")
         self.selected_answer = None
         self.answers_locked = False
 
@@ -20,9 +20,13 @@ class GameWindow:
         # Left frame for question, timer, and answers
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Category and Difficulty labels
+        self.category_difficulty_label = tk.Label(self.left_frame, text="")
+        self.category_difficulty_label.pack(side=tk.TOP, padx=10)
 
         # Question area
-        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT, font=("Helvetica", 14))
         self.question_label.pack(pady=20)
 
         # Timer
@@ -77,7 +81,10 @@ class GameWindow:
         
 
     def handle_question(self, message):
-        self.question_label.config(text=message.split("QUESTION:")[1])
+        category = message.split('|')[1]
+        difficulty = message.split('|')[0].split(":")[1]
+        self.category_difficulty_label.config(text=f"Category: {category}   |    Difficulty: {difficulty}")
+        self.question_label.config(text=message.split("|")[2], font=("Helvetica", 14))
         self.reset_answers()
 
     def handle_answer_result(self, message):

@@ -6,7 +6,7 @@ def transform_questions(data):
         question = {
             "type": item["type"],
             "difficulty": item["difficulty"],
-            "category": item["category"],
+            "category": html.unescape(item["category"]),
             "question": html.unescape(item["question"]),
             "correct_answer": html.unescape(item["correct_answer"]),
             "incorrect_answers": [html.unescape(ans) for ans in item["incorrect_answers"]]
