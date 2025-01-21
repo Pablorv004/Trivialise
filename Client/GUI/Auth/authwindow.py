@@ -44,7 +44,7 @@ class RegisterWindow:
 
         self.username_entry = tk.Entry(self.master, fg='grey')
         self.username_entry.pack(pady=5)
-        self.add_placeholder(self.username_entry, "Username")
+        self.add_placeholder(self.username_entry, "Email")
 
         self.password_entry = tk.Entry(self.master, show="*", fg='grey')
         self.password_entry.pack(pady=5)
@@ -76,7 +76,7 @@ class RegisterWindow:
             event.widget.config(fg='grey')
 
     def register_user(self):
-        username = self.username_entry.get()
+        email = self.username_entry.get()
         password = self.password_entry.get()
         confirm_password = self.confirm_password_entry.get()
 
@@ -84,14 +84,23 @@ class RegisterWindow:
             messagebox.showerror("Error", "Passwords do not match.")
             return
 
+        if not self.validate_email(email):
+            messagebox.showerror("Error", "Invalid email format.")
+            return
+
         hashed_password = sha256(password.encode()).hexdigest()
-        self.client.send_message(f"REGISTER:{username}:{hashed_password}")
+        self.client.send_message(f"REGISTER:{email}:{hashed_password}")
         response = self.client.receive_message()
         if response == "REGISTER_SUCCESS":
             messagebox.showinfo("Success", "Registration successful. Please login.")
             self.return_to_main()
         elif response == "REGISTER_FAIL":
-            messagebox.showerror("Error", "Username is already taken.")
+            messagebox.showerror("Error", "Email is already taken.")
+
+    def validate_email(self, email):
+        import re
+        pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        return re.match(pattern, email) is not None
 
     def return_to_main(self):
         self.parent.clear_window()
@@ -103,14 +112,14 @@ class LoginWindow:
         self.client = client
         self.parent = parent
         self.master.title("Login")
-        self.master.geometry("300x200")
+        self.master.geometry("300x230")
 
         self.label = tk.Label(master, text="Login")
         self.label.pack(pady=20)
 
         self.username_entry = tk.Entry(self.master, fg='grey')
         self.username_entry.pack(pady=5)
-        self.add_placeholder(self.username_entry, "Username")
+        self.add_placeholder(self.username_entry, "Email")
 
         self.password_entry = tk.Entry(self.master, show="*", fg='grey')
         self.password_entry.pack(pady=5)
@@ -138,22 +147,58 @@ class LoginWindow:
             event.widget.config(fg='grey')
 
     def login_user(self):
-        username = self.username_entry.get()
+        email = self.username_entry.get()
         password = self.password_entry.get()
 
         hashed_password = sha256(password.encode()).hexdigest()
-        self.client.send_message(f"LOGIN:{username}:{hashed_password}")
+        self.client.send_message(f"LOGIN:{email}:{hashed_password}")
         response = self.client.receive_message()
         if response == "LOGIN_SUCCESS":
-            self.client.username = username
+            self.client.email = email
             self.master.destroy()
             open_lobby_window(self.client)
+        elif response == "LOGIN_NN_SUCCESS":
+            self.client.email = email
+            self.master.destroy()
+            open_nick_selector_window(self.client)
         elif response == "LOGIN_FAIL":
-            messagebox.showerror("Error", "Invalid username or password.")
+            messagebox.showerror("Error", "Invalid email or password.")
 
     def return_to_main(self):
         self.parent.clear_window()
         EstablishNameWindow(self.master, self.client)
+
+class NickSelectorWindow:
+    def __init__(self, master, client):
+        self.master = master
+        self.client = client
+        self.master.title("Nick Selector")
+        self.master.geometry("300x200")
+
+        self.label = tk.Label(master, text="Select your Nickname")
+        self.label.pack(pady=20)
+
+        self.nickname_entry = tk.Entry(master)
+        self.nickname_entry.pack(pady=10)
+
+        self.submit_button = tk.Button(master, text="Submit", command=self.submit_nickname)
+        self.submit_button.pack(pady=10)
+
+    def submit_nickname(self):
+        nickname = self.nickname_entry.get()
+        self.client.send_message(f"NICK:{nickname}")
+        response = self.client.receive_message()
+        if response == "NICK_SUCCESS":
+            self.client.username = nickname
+            self.master.destroy()
+            open_lobby_window(self.client)
+        else:
+            messagebox.showerror("Error", "Failed to set nickname.")
+
+def open_nick_selector_window(client):
+    root = tk.Tk()
+    app = NickSelectorWindow(root, client)
+    root.mainloop()
 
 def open_establish_name_window(client):
     root = tk.Tk()

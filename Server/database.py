@@ -30,11 +30,11 @@ class Database:
             print("Reconnecting to MySQL database...")
             self.connect()
 
-    def create_user(self, username, password):
+    def create_user(self, email, password):
         self.reconnect()
         cursor = self.connection.cursor()
-        cursor.execute("INSERT INTO users (username, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
-                    (username, password, 0, 0, 0))
+        cursor.execute("INSERT INTO users (email, password, totalPoints, roundsPlayed, gamesPlayed) VALUES (%s, %s, %s, %s, %s)", 
+                    (email, password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
 
@@ -46,6 +46,14 @@ class Database:
         cursor.close()
         return user
     
+    def get_user_by_email(self, email):
+        self.reconnect()
+        cursor = self.connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
+
     def get_user_by_ip(self, ip):
         self.reconnect()
         cursor = self.connection.cursor(dictionary=True)
@@ -67,6 +75,13 @@ class Database:
         cursor = self.connection.cursor()
         cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
                     (totalPoints, roundsPlayed, gamesPlayed, username))
+        self.connection.commit()
+        cursor.close()
+
+    def update_username(self, email, username):
+        self.reconnect()
+        cursor = self.connection.cursor()
+        cursor.execute("UPDATE users SET username = %s WHERE email = %s", (username, email))
         self.connection.commit()
         cursor.close()
 
