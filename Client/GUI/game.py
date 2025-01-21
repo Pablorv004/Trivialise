@@ -29,6 +29,10 @@ class GameWindow:
         self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT, font=("Helvetica", 14))
         self.question_label.pack(pady=20)
 
+        # Horizontal line
+        self.separator = tk.Frame(self.left_frame, height=2, bd=1, relief=tk.SUNKEN)
+        self.separator.pack(fill=tk.X, padx=5, pady=10)
+
         # Timer
         self.timer_label = tk.Label(self.left_frame, text="", font=("Helvetica", 16))
         self.timer_label.pack(pady=10)
@@ -167,6 +171,8 @@ class GameWindow:
             label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {total_score} (+{round_score})")
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
+            separator = tk.Frame(self.leaderboard_frame, height=2, bd=1, relief=tk.SUNKEN)
+            separator.pack(fill=tk.X, padx=5, pady=5)
             i+=1
     
 def open_game_window(client):
