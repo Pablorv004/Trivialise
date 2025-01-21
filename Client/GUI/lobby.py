@@ -184,10 +184,12 @@ class LobbyWindow:
         
     def ready_up(self):
         self.ready = not self.ready
-        self.client.ready_client(self.ready)
+        self.client.send_message("READY" if self.ready else "NOT_READY")
         self.ready_button.config(text="Ready" if self.ready else "Not ready")
         self.ready_button.config(background="red" if not self.ready else "green")
-        self.counting_down = self.client.check_all_ready()
+        self.send_message("CHECK_READY")
+        response = self.client.receive_message()
+        self.counting_down = response and response.startswith("ALL_READY")
 
     def update_player_list(self):
         self.client.send_message("GET_USERNAMES")
@@ -216,7 +218,7 @@ class LobbyWindow:
             self.updating_users = False
             countdown_time = 10
             while countdown_time > 0:
-                message = self.client.receive_message_non_blocking()
+                message = self.client.receive_message()
                 print("Received countdown response from server: ", message)
                 if message and message.startswith("COUNTDOWN_TIMER:"):
                     countdown_time = int(message.split(":")[1].strip())
