@@ -155,7 +155,7 @@ class GameWindow:
         print("Updating leaderboard...")
         for widget in self.leaderboard_frame.winfo_children():
             widget.destroy()
-        i = 0
+        i = 1
         for entry in data:
             username, score = entry.split(":")
             label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {score}")
