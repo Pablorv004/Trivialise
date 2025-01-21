@@ -14,6 +14,7 @@ class TriviaServer:
         self.max_clients = 4
         self.questions = []
         self.current_question_index = 0
+        self.round_timer = 0
         self.answers = {}
         self.scores = {}
         self.db = Database()
@@ -68,7 +69,7 @@ class TriviaServer:
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
-            self.received_answers.append((client_socket, message.split(":")[1]))
+            self.received_answers.append((client_socket, {message.split(":")[1]}, self.round_timer))
         elif message.startswith("REGISTER:"):
             self.handle_register(client_socket, message)
         elif message.startswith("LOGIN:"):
@@ -141,6 +142,7 @@ class TriviaServer:
             for client in self.clients:
                 client.sendall(f"TIMER:{t}".encode('utf-8'))
             if t > 0:
+                self.round_timer = t
                 time.sleep(1)
             else:
                 self.process_received_answers()
@@ -165,12 +167,14 @@ class TriviaServer:
             return
         if not self.received_answers:
             print("No answers received.")
-        for client, answer in self.received_answers:
-            print(f"Client {client.getpeername()[0]} answered: {answer}")
-            if answer == correct_answer:
-                self.scores[client] += 10 * (30 if question['difficulty'] == "hard" else 25 if question['difficulty'] == "medium" else 20)
+        for client, answer, time_answered in self.received_answers:
+            if client.fileno() != -1:
+                print(f"Client {client.getpeername()[0]} answered: {answer} in time: {time_answered}")
+                if answer == correct_answer:
+                    self.scores[client] += 100 + (10 if question['difficulty'] == "hard" else 8 if question['difficulty'] == "medium" else 5) * (30 if time_answered > 30 else 20 if time_answered > 20 else 10)
         for client in self.clients:
-            client.sendall(f"ANSWER_RESULT:correct:{correct_answer}".encode('utf-8'))
+            if client.fileno() != -1:
+                client.sendall(f"ANSWER_RESULT:correct:{correct_answer}".encode('utf-8'))
         self.received_answers.clear()
         self.broadcast_leaderboard()
 
