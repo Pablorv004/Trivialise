@@ -190,8 +190,6 @@ class NickSelectorWindow:
         self.client.send_message(f"NICK:{nickname}")
         response = self.client.receive_message()
         print("Response:", response)
-        if response != "NICK_SUCCESS":
-            response = self.client.receive_message()
         if response == "NICK_SUCCESS":
             self.client.username = nickname
             self.master.destroy()
