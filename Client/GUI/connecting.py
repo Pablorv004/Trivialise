@@ -16,8 +16,16 @@ class ConnectingWindow:
     def connect_to_server(self):
         try:
             self.client.connect_to_server()
-            self.master.destroy()  # Close the connecting window
-            open_establish_name_window(self.client)
+            message = self.client.receive_message()
+            if message == "GAME_ONGOING":
+                self.display_error("Game is ongoing. Please try again later.")
+                self.master.after(3000, self.master.destroy)
+            elif message == "SERVER_FULL":
+                self.display_error("Server is full. Please try again later.")
+                self.master.after(3000, self.master.destroy)
+            else:
+                self.master.destroy()  # Close the connecting window
+                open_establish_name_window(self.client)
         except Exception as e:
             self.display_error(str(e))
 

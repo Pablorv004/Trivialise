@@ -19,6 +19,7 @@ class TriviaServer:
         self.db = Database()
         self.game_ongoing = False
         self.received_answers = []
+        self.logged_in_clients = {}
 
     def start_server(self, host='0.0.0.0', port=12346):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,6 +41,7 @@ class TriviaServer:
             client_socket.close()
             self.clients.remove(client_socket)
             self.scores.pop(client_socket, None)
+            self.logged_in_clients.pop(client_socket, None)
             print(f"Client {client_ip} disconnected")
             
         while True:
@@ -54,12 +56,14 @@ class TriviaServer:
                 except OSError:
                     break
             else:
+                client_socket, addr = server_socket.accept()
                 if self.game_ongoing:
                     print("Game is ongoing, new connections are not allowed.")
-                    break
+                    client_socket.sendall("GAME_ONGOING".encode('utf-8'))
                 else:
                     print("Server is full")
-                    break
+                    client_socket.sendall("SERVER_FULL".encode('utf-8'))
+                client_socket.close()
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
@@ -91,6 +95,7 @@ class TriviaServer:
         if user and user['password'] == password:
             self.db.update_user_ip(username, client_socket.getpeername()[0], time.strftime('%Y-%m-%d %H:%M:%S'))
             client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
+            self.logged_in_clients[client_socket] = username
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
 
@@ -186,7 +191,7 @@ class TriviaServer:
         else:
             print("No clients or scores available to determine a winner.")
         print("Ending game...")
-        time.sleep(5)
+        time.sleep(2)
         self.send_players_to_lobby()
         self.game_ongoing = False
 
@@ -228,10 +233,8 @@ class TriviaServer:
 
     def handle_get_usernames(self, client_socket):
         usernames = []
-        for client in self.clients:
+        for client in self.logged_in_clients:
             if client.fileno() != -1:
-                user = self.db.get_user_by_ip(client.getpeername()[0])
-                if user:
-                    usernames.append(user['username'])
+                usernames.append(self.logged_in_clients[client])
         usernames_str = ",".join(usernames)
         client_socket.sendall(f"{usernames_str}".encode('utf-8'))
