@@ -153,6 +153,7 @@ class LoginWindow:
         hashed_password = sha256(password.encode()).hexdigest()
         self.client.send_message(f"LOGIN:{email}:{hashed_password}")
         response = self.client.receive_message()
+        print("Response:", response)
         if response == "LOGIN_SUCCESS":
             self.client.email = email
             self.master.destroy()
@@ -186,8 +187,9 @@ class NickSelectorWindow:
 
     def submit_nickname(self):
         nickname = self.nickname_entry.get()
-        self.client.send_message(f"NICK:{nickname}")
+        self.client.send_message_non_blocking(f"NICK:{nickname}")
         response = self.client.receive_message()
+        print("Response:", response)
         if response == "NICK_SUCCESS":
             self.client.username = nickname
             self.master.destroy()

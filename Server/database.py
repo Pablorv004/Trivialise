@@ -37,14 +37,6 @@ class Database:
                     (email, password, 0, 0, 0))
         self.connection.commit()
         cursor.close()
-
-    def get_user(self, username):
-        self.reconnect()
-        cursor = self.connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-        user = cursor.fetchone()
-        cursor.close()
-        return user
     
     def get_user_by_email(self, email):
         self.reconnect()
@@ -62,19 +54,19 @@ class Database:
         cursor.close()
         return user
     
-    def update_user_ip(self, username, ip, lastOnline):
+    def update_user_ip(self, email, ip, lastOnline):
         self.reconnect()
         cursor = self.connection.cursor()
-        cursor.execute("UPDATE users SET ip = %s WHERE username = %s", (ip, username))
-        cursor.execute("UPDATE users SET lastOnline = %s WHERE username = %s", (lastOnline, username))
+        cursor.execute("UPDATE users SET ip = %s WHERE email = %s", (ip, email))
+        cursor.execute("UPDATE users SET lastOnline = %s WHERE email = %s", (lastOnline, email))
         self.connection.commit()
         cursor.close()
 
-    def update_user(self, username, totalPoints, roundsPlayed, gamesPlayed):
+    def update_user(self, email, totalPoints, roundsPlayed, gamesPlayed):
         self.reconnect()
         cursor = self.connection.cursor()
-        cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE username = %s", 
-                    (totalPoints, roundsPlayed, gamesPlayed, username))
+        cursor.execute("UPDATE users SET totalPoints = %s, roundsPlayed = %s, gamesPlayed = %s WHERE email = %s", 
+                    (totalPoints, roundsPlayed, gamesPlayed, email))
         self.connection.commit()
         cursor.close()
 
