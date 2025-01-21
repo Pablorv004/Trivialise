@@ -40,11 +40,11 @@ class TriviaServer:
                     self.handle_message(client_socket, message)
                 except ConnectionResetError:
                     break
-            client_socket.close()
             self.clients.remove(client_socket)
             self.scores.pop(client_socket, None)
             self.round_gained_scores.pop(client_socket, None)
             self.logged_in_clients.pop(client_socket, None)
+            client_socket.close()
             print(f"Client {client_ip} disconnected")
             
         while True:
@@ -244,7 +244,7 @@ class TriviaServer:
                 rounds_played = user_data['roundsPlayed'] + len(self.questions)
                 games_played = user_data['gamesPlayed'] + 1
                 print(f"Updating user {user_data['username']}: totalPoints={total_points}, roundsPlayed={rounds_played}, gamesPlayed={games_played}")
-                self.db.update_user(user_data['username'], total_points, rounds_played, games_played)
+                self.db.update_user(user_data['email'], total_points, rounds_played, games_played)
             else:
                 print(f"No user data found for {user_data['username']}")
 

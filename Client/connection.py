@@ -34,17 +34,6 @@ class TriviaClient:
             self.close_connection()
             return None
 
-    def receive_message_non_blocking(self):
-        try:
-            ready = select.select([self.client_socket], [], [], 0.1)
-            if ready[0]:
-                return self.client_socket.recv(1024).decode('utf-8')
-            return None
-        except ConnectionResetError:
-            print("Connection closed by the server.")
-            self.close_connection()
-            return None
-
     def close_connection(self):
         self.client_socket.close()
         print("Connection closed.")

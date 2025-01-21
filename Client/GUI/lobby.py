@@ -151,7 +151,7 @@ class LobbyWindow:
                 elif order_by == "roundsPlayed":
                     order_by_var.set("Rounds Played")
                 self.client.send_message(f"GET_LEADERBOARD:{order_by}")
-                leaderboard_data = self.client.receive_message_non_blocking()
+                leaderboard_data = self.client.receive_message()
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
             except Exception as e:
@@ -180,7 +180,7 @@ class LobbyWindow:
     def update_player_list(self):
         self.client.send_message("GET_USERNAMES")
         try:
-            message = self.client.receive_message_non_blocking()
+            message = self.client.receive_message()
             player_list = message.split(",") if message else []
         except Exception as e:
             print(f"Error getting player list: {e}")
