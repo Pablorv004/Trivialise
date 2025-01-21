@@ -36,5 +36,5 @@ class ConnectingWindow:
 def open_connecting_window():
     root = tk.Tk()
     app = ConnectingWindow(root)
-    root.after(100, app.connect_to_server)  # Attempt to connect after 100ms
+    root.after(100, app.connect_to_server)
     root.mainloop()
