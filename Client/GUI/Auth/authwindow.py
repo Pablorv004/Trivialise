@@ -187,8 +187,8 @@ class NickSelectorWindow:
 
     def submit_nickname(self):
         nickname = self.nickname_entry.get()
-        self.client.send_message_non_blocking(f"NICK:{nickname}")
-        response = self.client.receive_message()
+        self.client.send_message(f"NICK:{nickname}")
+        response = self.client.receive_message_non_blocking()
         print("Response:", response)
         if response == "NICK_SUCCESS":
             self.client.username = nickname
