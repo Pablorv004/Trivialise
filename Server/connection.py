@@ -48,6 +48,7 @@ class TriviaServer:
             if len(self.clients) < self.max_clients and not self.game_ongoing:
                 try:
                     client_socket, addr = server_socket.accept()
+                    client_socket.sendall("CONNECTED".encode('utf-8'))
                     self.clients.append(client_socket)
                     self.scores[client_socket] = 0
                     print(f"Connection from {addr}")

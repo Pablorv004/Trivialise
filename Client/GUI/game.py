@@ -38,7 +38,6 @@ class GameWindow:
         self.leaderboard_frame = tk.Frame(self.main_frame)
         self.leaderboard_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=20, pady=20)
         self.leaderboard_labels = []
-        self.update_leaderboard([])  # Initialize leaderboard
 
         self.return_button = tk.Button(self.main_frame, text="Return to Lobby", command=self.return_to_lobby)
         self.return_button.pack(side=tk.BOTTOM, pady=20)
@@ -156,11 +155,13 @@ class GameWindow:
         print("Updating leaderboard...")
         for widget in self.leaderboard_frame.winfo_children():
             widget.destroy()
+        i = 0
         for entry in data:
             username, score = entry.split(":")
-            label = tk.Label(self.leaderboard_frame, text=f"{username}\nScore: {score}")
+            label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {score}")
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
+            i+=1
 
     def on_button_press(self, event):
         widget = event.widget
