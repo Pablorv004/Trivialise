@@ -69,7 +69,7 @@ class TriviaServer:
 
     def handle_message(self, client_socket, message):
         if message.startswith("ANSWER:"):
-            self.received_answers.append((client_socket, {message.split(":")[1]}, self.round_timer))
+            self.received_answers.append((client_socket, message.split(":")[1], self.round_timer))
         elif message.startswith("REGISTER:"):
             self.handle_register(client_socket, message)
         elif message.startswith("LOGIN:"):
