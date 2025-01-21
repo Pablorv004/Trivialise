@@ -11,8 +11,8 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("450x470") 
-        self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
+        self.master.geometry("600x470") 
+        self.settings = {"amount": 5, "difficulty": "Any Difficulty", "type": "Any Type"}
         self.ready = False
         self.counting_down = False
         self.updating_users = True
@@ -51,6 +51,9 @@ class LobbyWindow:
         self.ready_button = tk.Button(master, text="Not ready", background="red", command=self.ready_up)
         self.ready_button.pack(side=tk.LEFT, padx=10)
         self.ready_button.config(background="red" if not self.ready else "green")
+
+        self.change_nick_button = tk.Button(master, text="Change Nick", command=self.change_nickname)
+        self.change_nick_button.pack(side=tk.LEFT, padx=20)
 
         # Start thread to update player list
         self.update_thread = threading.Thread(target=self.update_player_list)
@@ -152,7 +155,8 @@ class LobbyWindow:
                     order_by_var.set("Games Played")
                 elif order_by == "roundsPlayed":
                     order_by_var.set("Rounds Played")
-                leaderboard_data = self.client.get_leaderboard(order_by)
+                self.client.send_message(f"GET_LEADERBOARD:{order_by}")
+                leaderboard_data = self.client.receive_message()
                 print(f"Leaderboard data received: {leaderboard_data}")
                 show_leaderboard(leaderboard_data)
             except Exception as e:
@@ -186,23 +190,24 @@ class LobbyWindow:
         self.counting_down = self.client.check_all_ready()
 
     def update_player_list(self):
-        while True:
-            self.update_event.wait()
-            if not self.updating_users:
-                continue
-            print("Updating player list...")
-            player_list = self.client.get_player_list()
-            for i, frame in enumerate(self.player_frames):
-                for widget in frame.winfo_children():
-                    widget.destroy()
-                if i < len(player_list):
-                    player_label = tk.Label(frame, text=player_list[i])
-                    player_label.pack()
-                else:
-                    player_label = tk.Label(frame, text="Waiting for player...")
-                    player_label.pack()
-            time.sleep(1)
-            
+        self.client.send_message("GET_USERNAMES")
+        try:
+            message = self.client.receive_message()
+            player_list = message.split(",") if message else []
+        except Exception as e:
+            print(f"Error getting player list: {e}")
+            return
+        for i, frame in enumerate(self.player_frames):
+            for widget in frame.winfo_children():
+                widget.destroy()
+            if i < len(player_list):
+                player_label = tk.Label(frame, text=player_list[i])
+                player_label.pack()
+            else:
+                player_label = tk.Label(frame, text="Waiting for player...")
+                player_label.pack()
+        if self.master.winfo_exists():
+            self.master.after(3000, self.update_player_list)
     # Handles the countdown to start the game
     def update_ready_countdown(self):
         print("Entering countdown function...")
@@ -229,7 +234,11 @@ class LobbyWindow:
             self.start_game()
         else:
             return
-            
+
+    def change_nickname(self):
+        self.master.destroy()
+        from GUI.Auth.authwindow import open_nick_selector_window
+        open_nick_selector_window(self.client)
 
 def open_lobby_window(client):
     root = tk.Tk()

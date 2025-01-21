@@ -9,7 +9,7 @@ class GameWindow:
         self.master = master
         self.client = client
         self.master.title("Trivia Game")
-        self.master.geometry("600x350")
+        self.master.geometry("650x430")
         self.selected_answer = None
         self.answers_locked = False
 
@@ -20,10 +20,18 @@ class GameWindow:
         # Left frame for question, timer, and answers
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # Category and Difficulty labels
+        self.category_difficulty_label = tk.Label(self.left_frame, text="")
+        self.category_difficulty_label.pack(side=tk.TOP, padx=10)
 
         # Question area
-        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT)
+        self.question_label = tk.Label(self.left_frame, text="The game will begin shortly, when one player hits \"Start\".", wraplength=400, justify=tk.LEFT, font=("Helvetica", 14))
         self.question_label.pack(pady=20)
+
+        # Horizontal line
+        self.separator = tk.Frame(self.left_frame, height=2, bd=1, relief=tk.SUNKEN)
+        self.separator.pack(fill=tk.X, padx=5, pady=10)
 
         # Timer
         self.timer_label = tk.Label(self.left_frame, text="", font=("Helvetica", 16))
@@ -38,7 +46,6 @@ class GameWindow:
         self.leaderboard_frame = tk.Frame(self.main_frame)
         self.leaderboard_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=20, pady=20)
         self.leaderboard_labels = []
-        self.update_leaderboard([])  # Initialize leaderboard
 
         self.return_button = tk.Button(self.main_frame, text="Return to Lobby", command=self.return_to_lobby)
         self.return_button.pack(side=tk.BOTTOM, pady=20)
@@ -46,8 +53,6 @@ class GameWindow:
         # Start thread to receive questions
         self.receive_thread = threading.Thread(target=self.receive_questions)
         self.receive_thread.start()
-
-        self.master.bind("<Button-1>", self.on_button_press)
 
     def select_answer(self, answer_key):
         if self.selected_answer is None and not self.answers_locked:
@@ -80,7 +85,10 @@ class GameWindow:
         
 
     def handle_question(self, message):
-        self.question_label.config(text=message.split("QUESTION:")[1])
+        category = message.split('|')[1]
+        difficulty = message.split('|')[0].split(":")[1]
+        self.category_difficulty_label.config(text=f"Category: {category}   |    Difficulty: {difficulty}")
+        self.question_label.config(text=message.split("|")[2], font=("Helvetica", 14))
         self.reset_answers()
 
     def handle_answer_result(self, message):
@@ -156,19 +164,17 @@ class GameWindow:
         print("Updating leaderboard...")
         for widget in self.leaderboard_frame.winfo_children():
             widget.destroy()
+        i = 1
         for entry in data:
             username, score = entry.split(":")
-            label = tk.Label(self.leaderboard_frame, text=f"{username}\nScore: {score}")
+            total_score, round_score = score.split("|")
+            label = tk.Label(self.leaderboard_frame, text=f"{i}. {username}\nScore: {total_score} (+{round_score})")
             label.pack(pady=5)
             self.leaderboard_labels.append(label)
-
-    def on_button_press(self, event):
-        widget = event.widget
-        for key, btn in self.answer_buttons.items():
-            if widget == btn:
-                self.select_answer(key)
-                break
-
+            separator = tk.Frame(self.leaderboard_frame, height=2, bd=1, relief=tk.SUNKEN)
+            separator.pack(fill=tk.X, padx=5, pady=5)
+            i+=1
+    
 def open_game_window(client):
     print("Creating game window...")
     root = tk.Tk()
