@@ -187,7 +187,7 @@ class LobbyWindow:
         self.client.send_message("READY" if self.ready else "NOT_READY")
         self.ready_button.config(text="Ready" if self.ready else "Not ready")
         self.ready_button.config(background="red" if not self.ready else "green")
-        self.send_message("CHECK_READY")
+        self.client.send_message("CHECK_READY")
         response = self.client.receive_message()
         self.counting_down = response and response.startswith("ALL_READY")
 
