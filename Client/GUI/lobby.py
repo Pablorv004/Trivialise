@@ -11,8 +11,8 @@ class LobbyWindow:
         self.client = client
         self.username = client.username
         self.master.title(f"Lobby - {self.username}")
-        self.master.geometry("450x470") 
-        self.settings = {"amount": 10, "difficulty": "Any Difficulty", "type": "Any Type"}
+        self.master.geometry("600x470") 
+        self.settings = {"amount": 5, "difficulty": "Any Difficulty", "type": "Any Type"}
 
         # Load and display logo
         self.logo_img = self.load_image("resources/logo.png", (200, 200))
@@ -45,6 +45,9 @@ class LobbyWindow:
 
         self.ready_button = tk.Button(master, text="Ready", command=self.ready_up)
         self.ready_button.pack(side=tk.LEFT, padx=20)
+
+        self.change_nick_button = tk.Button(master, text="Change Nick", command=self.change_nickname)
+        self.change_nick_button.pack(side=tk.LEFT, padx=20)
 
         # Start thread to update player list
         self.update_thread = threading.Thread(target=self.update_player_list)
@@ -193,6 +196,11 @@ class LobbyWindow:
                 player_label.pack()
         if self.master.winfo_exists():
             self.master.after(3000, self.update_player_list)
+
+    def change_nickname(self):
+        self.master.destroy()
+        from GUI.Auth.authwindow import open_nick_selector_window
+        open_nick_selector_window(self.client)
 
 def open_lobby_window(client):
     root = tk.Tk()

@@ -85,28 +85,42 @@ class TriviaServer:
             self.handle_get_leaderboard(client_socket, order_by)
         elif message.startswith("GET_USERNAMES"):
             self.handle_get_usernames(client_socket)
+        elif message.startswith("NICK:"):
+            self.handle_nick_selection(client_socket, message)
 
     def handle_register(self, client_socket, message):
-        _, username, password = message.split(":")
-        if self.db.get_user(username):
+        _, email, password = message.split(":")
+        if self.db.get_user_by_email(email):
             client_socket.sendall("REGISTER_FAIL".encode('utf-8'))
         else:
-            self.db.create_user(username, password)
+            self.db.create_user(email, password)
             client_socket.sendall("REGISTER_SUCCESS".encode('utf-8'))
 
     def handle_login(self, client_socket, message):
-        _, username, password = message.split(":")
-        user = self.db.get_user(username)
+        _, email, password = message.split(":")
+        user = self.db.get_user_by_email(email)
         if user and user['password'] == password:
-            self.db.update_user_ip(username, client_socket.getpeername()[0], time.strftime('%Y-%m-%d %H:%M:%S'))
-            client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
-            self.logged_in_clients[client_socket] = username
+            self.db.update_user_ip(email, client_socket.getpeername()[0], time.strftime('%Y-%m-%d %H:%M:%S'))
+            if user['username']:
+                client_socket.sendall("LOGIN_SUCCESS".encode('utf-8'))
+                self.logged_in_clients[client_socket] = user['username']
+            else:
+                client_socket.sendall("LOGIN_NN_SUCCESS".encode('utf-8'))
+                self.logged_in_clients[client_socket] = "Choosing Nick..."
+            
         else:
             client_socket.sendall("LOGIN_FAIL".encode('utf-8'))
 
+    def handle_nick_selection(self, client_socket, message):
+        _, nickname = message.split(":")
+        email = self.db.get_user_by_ip(client_socket.getpeername()[0])['email']
+        self.db.update_username(email, nickname)
+        self.logged_in_clients[client_socket] = nickname
+        client_socket.sendall("NICK_SUCCESS".encode('utf-8'))
+
     def handle_start_game(self, client_socket, settings):
         self.game_ongoing = True 
-        amount = settings.get("amount", 10)
+        amount = settings.get("amount", 5)
         difficulty = settings.get("difficulty", "Any Difficulty")
         qtype = settings.get("type", "Any Type")
         self.notify_game_start()
