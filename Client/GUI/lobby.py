@@ -171,7 +171,7 @@ class LobbyWindow:
         return_button = tk.Button(leaderboard_window, text="Return", command=leaderboard_window.destroy)
         return_button.pack(side=tk.BOTTOM, pady=20)
 
-        fetch_leaderboard("totalPoints")  # Show default leaderboard
+        fetch_leaderboard("totalPoints")
 
     def update_player_list(self):
         player_list = self.client.get_player_list()
